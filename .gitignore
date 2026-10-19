@@ -14,6 +14,11 @@ captures/
 inspection_log*.csv
 saved_frame_*.png
 
+# Secrets (Discord webhook URL, etc.)
+.env
+.env.*
+!.env.example
+
 # Editors / OS
 .vscode/
 .idea/

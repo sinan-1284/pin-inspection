@@ -6,11 +6,15 @@ The plan builds step by step, so each milestone is usable on its own. It reuses 
 
 ---
 
-## Milestone 0 — Setup & sample data
+## Milestone 0 — Raspberry Pi setup & sample data
 
-- [ ] Project skeleton: `pin_inspection/` package, `tools/`, `tests/`, `config.yaml`, `requirements.txt`, own `venv/`
+- [ ] Flash **Raspberry Pi OS 64-bit (Lite or Desktop)**, enable SSH, set hostname (e.g. `pin-station-01`), connect to Wi-Fi/Ethernet
+- [ ] Fit the **active cooler** and use the **official 27 W PSU** — under-powering or overheating makes the Pi throttle, which drops fps
+- [ ] Plug the webcam into a **USB 3 (blue) port**; check it with `v4l2-ctl --list-devices` and `v4l2-ctl --list-ctrls`
+- [ ] Project skeleton: `pin_inspection/` package, `tools/`, `tests/`, `config.yaml`, `requirements.txt`, own `venv/` (Python 3.11+, `opencv-python-headless` — no desktop GUI needed on the Pi)
 - [ ] Mount camera + backlight; confirm a clean silhouette (pin dark, background bright)
 - [ ] Lock camera focus and exposure (auto-exposure drifts and breaks thresholding)
+- [ ] Check speed on the Pi: target resolution (start at 640×480, go up only if detail is needed) and frames per second for the full pipeline
 - [ ] Collect a sample set:
   - 20+ **good** pins (different positions/angles in the field of view)
   - 10+ **bad** pins, labelled by defect: bent shaft, bad head, short/long, missing head
@@ -50,13 +54,47 @@ Improvements over the reference:
 
 **Done when:** an operator can train on good pins and run live inspection on the real station.
 
-## Milestone 3 — Results out to the line
+## Milestone 3 — Health monitoring & Discord notifications
+
+`pin_inspection/health.py`, running inside the inspection service (so it knows camera and inspection state, not just hardware):
+
+**Checks** (every ~30 s):
+
+| Check | Source on the Pi | Alert when |
+|---|---|---|
+| Camera | frames arriving from the capture loop | no frame for 10 s / camera unplugged — and again when it recovers |
+| CPU temperature | `/sys/class/thermal/thermal_zone0/temp` | above 80 °C (Pi 5 throttles at ~85 °C) |
+| Power / throttling | `vcgencmd get_throttled` | under-voltage or throttling flag set |
+| Disk | `psutil.disk_usage('/')` | above 90 % full (SD cards fill up with logs/images) |
+| Memory / CPU load | `psutil` | sustained very high usage |
+| Inspection | the inspector's own counters | fail rate above X % over the last N pins; no pin seen for N minutes during shift hours |
+| Service | start-up / shutdown hooks | station started, stopped, or crashed and restarted |
+
+**Discord** (personal channel, via webhook):
+
+- [ ] Create a webhook in the channel (Channel settings → Integrations → Webhooks) and put its URL in `.env` as `DISCORD_WEBHOOK_URL` — never commit it
+- [ ] Send **on state change only** (OK → problem, problem → recovered), with a cooldown, so a flapping sensor can't spam the channel
+- [ ] Colour-coded embeds: 🔴 problem, 🟢 recovered, 🔵 info; include hostname, time and the measured value
+- [ ] Optional snapshot image attached to camera / fail-rate alerts
+- [ ] **Daily summary** at end of shift: pins inspected, pass / fail, top defect, uptime, max temperature
+- [ ] `tools/test_discord.py` to send a test message when setting up a new station
+- [ ] Never let a Discord outage break inspection: send from a background queue with timeouts and retries
+
+**DDLC health dashboard:**
+
+- [ ] Publish a health payload every 5 s to `health/<machine-id>` (same topic and `hardware` shape as `AI-DDLC/health_ddlc/health_pub.py`), extended with `temperature_c`, `throttled`, and a `machine_vision` section (camera ok, model loaded, fps, pass/fail counts)
+
+**Dead-station detection:** a Pi that has crashed or lost power can't send its own alert. Cover this from outside — either a free heartbeat service (e.g. healthchecks.io, which can notify Discord when the pings stop) or the DDLC health dashboard flagging a machine that went quiet.
+
+**Done when:** unplugging the camera, covering the cooler, or pulling the network each produces exactly one Discord alert, and one "recovered" message when fixed.
+
+## Milestone 4 — Results out to the line
 
 - [ ] Publish results over MQTT (same topic/payload shape as the reference: `<device_id>/pin_inspection`, see `machine_vision_pin/hmi.md`) so existing DDLC subscribers keep working
 - [ ] Optional digital output for a reject mechanism (GPIO / Modbus TCP to a PLC)
 - [ ] Count totals: inspected / pass / fail per shift
 
-## Milestone 4 — Web dashboard (HMI)
+## Milestone 5 — Web dashboard (HMI)
 
 Browser UI in the style of [`AI-DDLC/generic`](https://github.com/AI-DDLC/generic) (FastAPI + DDLC theme):
 
@@ -65,9 +103,10 @@ Browser UI in the style of [`AI-DDLC/generic`](https://github.com/AI-DDLC/generi
 - [ ] Results view: pass/fail counters, recent fails with images, CSV export
 - [ ] Settings: camera selection, exposure, sensitivity (`threshold_multiplier`)
 
-## Milestone 5 — Hardening
+## Milestone 6 — Hardening
 
-- [ ] Run as a `systemd` service that starts on boot and survives camera unplug/replug
+- [ ] Run as a `systemd` service that starts on boot, restarts on crash, and survives camera unplug/replug
+- [ ] Protect the SD card: rotate logs, cap saved images, or boot from an SSD (Pi 5 supports NVMe via a HAT)
 - [ ] Measure accuracy on a larger batch (e.g. 200 pins) and tune the threshold from real false-reject / missed-defect rates
 - [ ] Document station setup (camera distance, backlight, lens) so it can be rebuilt
 
@@ -85,4 +124,5 @@ Browser UI in the style of [`AI-DDLC/generic`](https://github.com/AI-DDLC/generi
 2. **Pin presentation** — do pins arrive one at a time in a fixed position, or loose/moving on a conveyor?
 3. **Which defects matter most** to the customer, and what's the acceptable false-reject rate?
 4. **Output** — does a reject signal need to drive a physical mechanism (PLC/GPIO), or is reporting enough?
-5. **Camera** — stay on the USB C920, or move to an industrial GigE camera (Basler) as `generic` supports?
+5. **Camera** — which USB webcam exactly? It must allow manual focus and exposure (the C920 does).
+6. **Notifications** — any quiet hours for Discord alerts, and should the daily summary go to the same channel?
