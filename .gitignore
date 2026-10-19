@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Trained models (regenerated from good-pin images)
+*.pkl
+models/
+
+# Captured data and logs
+good/
+captures/
+inspection_log*.csv
+saved_frame_*.png
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
