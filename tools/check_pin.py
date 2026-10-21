@@ -58,7 +58,7 @@ def inspect_frame(frame, source, cfg, model):
         print("    most unusual vs. good pins: " + ", ".join(f"{k} {v:+.1f} sigma" for k, v in dev))
 
     lines = [(f"{name}: {v} [{lim}]", ok) for name, v, lim, ok in checks]
-    card = verdict_card(annotate(frame, a.seg, a.al), verdict, lines)
+    card = verdict_card(annotate(a.frame, a.seg, a.al), verdict, lines)
     cv2.imwrite(str(ROOT / "captures" / "last_inspection.png"), card)
 
     row = {"time": time.strftime("%Y-%m-%d %H:%M:%S"), "source": source, "verdict": verdict,

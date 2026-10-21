@@ -1,6 +1,9 @@
 """Frame -> measurements, shared by the CLI tools."""
 from dataclasses import dataclass
 
+import cv2
+import numpy as np
+
 from .align import Alignment, align
 from .features import measure
 from .segment import Segmentation, segment
@@ -8,13 +11,23 @@ from .segment import Segmentation, segment
 
 @dataclass
 class Analysis:
+    frame: np.ndarray       # the frame as measured (aspect-corrected); seg/al coords refer to it
     seg: Segmentation
     al: Alignment
     res: dict
 
 
+def correct_aspect(frame, aspect):
+    """Undo the camera's horizontal stretch so pixels are square."""
+    if not aspect or aspect == 1:
+        return frame
+    h, w = frame.shape[:2]
+    return cv2.resize(frame, (int(round(w / aspect)), h), interpolation=cv2.INTER_AREA)
+
+
 def analyse(frame, cfg):
     """Segment, align and measure the pin in `frame`; None if no pin is found."""
+    frame = correct_aspect(frame, cfg["camera"].get("pixel_aspect", 1))
     seg = segment(frame, cfg["segment"])
     if seg is None:
         return None
@@ -27,4 +40,4 @@ def analyse(frame, cfg):
         "head_xy": [round(float(x + al.head_xy[0] / seg.scale), 1), round(float(y + al.head_xy[1] / seg.scale), 1)],
         "tip_xy": [round(float(x + al.tip_xy[0] / seg.scale), 1), round(float(y + al.tip_xy[1] / seg.scale), 1)],
     }
-    return Analysis(seg, al, res)
+    return Analysis(frame, seg, al, res)

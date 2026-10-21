@@ -16,6 +16,7 @@ SCALE = 22 / 300  # synthetic 300 px pin = 22 mm, like the real station
 def measured(**kw):
     cfg = copy.deepcopy(CFG)
     cfg["measure"]["mm_per_px"] = SCALE
+    cfg["camera"]["pixel_aspect"] = 1  # synthetic images have square pixels
     from pin_inspection.pipeline import analyse
     kw = {"shaft_w": 14, "head_w": 26, **kw}
     return analyse(draw_pin(**kw), cfg).res

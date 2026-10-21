@@ -65,7 +65,7 @@ def main():
         sys.exit("No pin found in view")
     seg, al, res = a.seg, a.al, a.res
 
-    cv2.imwrite(str(out_dir / "annotated.png"), annotate(frame, seg, al))
+    cv2.imwrite(str(out_dir / "annotated.png"), annotate(a.frame, seg, al))
     cv2.imwrite(str(out_dir / "aligned_mask.png"), al.mask)
     cv2.imwrite(str(out_dir / "width_profile.png"), profile_plot(res["profile"]))
     (out_dir / "measurements.json").write_text(json.dumps(res, indent=2))
