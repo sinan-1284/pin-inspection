@@ -21,7 +21,7 @@ import cv2
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from check_pin import load_model  # noqa: E402
-from pin_inspection.capture import Camera  # noqa: E402
+from pin_inspection.capture import Camera, save_frame  # noqa: E402
 from pin_inspection.config import load_config  # noqa: E402
 from pin_inspection.inspection import check  # noqa: E402
 from pin_inspection.overlay import annotate, verdict_card  # noqa: E402
@@ -76,7 +76,7 @@ class Station:
         out = DATA / label
         out.mkdir(parents=True, exist_ok=True)
         path = out / time.strftime("%Y%m%d-%H%M%S.png")
-        cv2.imwrite(str(path), frame)
+        save_frame(path, frame)
         good, bad = self.counts()
         msg = f"Saved {path.relative_to(ROOT)} (was {verdict}) — {good} good, {bad} bad samples"
         print(f"*** {msg}", flush=True)

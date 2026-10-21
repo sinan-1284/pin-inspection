@@ -26,7 +26,8 @@ def main():
         for p in sorted((ROOT / "data" / truth).rglob("*")):
             if p.suffix.lower() not in (".png", ".jpg"):
                 continue
-            a = analyse(cv2.imread(str(p)), cfg)
+            img = cv2.imread(str(p))
+            a = None if img is None else analyse(img, cfg)
             verdict, checks = ("FAIL", []) if a is None else check(a.res, cfg, model)
             failed = [c[0] for c in checks if not c[3]] or (["no pin"] if a is None else [])
             counts[(truth, verdict)] += 1

@@ -30,7 +30,8 @@ def main():
     paths = sorted(args.good.glob("*.png")) + sorted(args.good.glob("*.jpg"))
     results, used = [], []
     for p in paths:
-        a = analyse(cv2.imread(str(p)), cfg)
+        img = cv2.imread(str(p))
+        a = None if img is None else analyse(img, cfg)
         if a is None:
             print(f"  skip {p.name}: no pin found")
             continue

@@ -18,7 +18,7 @@ from pathlib import Path
 import cv2
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from pin_inspection.capture import Camera  # noqa: E402
+from pin_inspection.capture import Camera, save_frame  # noqa: E402
 from pin_inspection.config import load_config  # noqa: E402
 from pin_inspection.inspection import check  # noqa: E402
 from pin_inspection.model import PinModel  # noqa: E402
@@ -107,7 +107,7 @@ def main():
                 out = ROOT / "data" / args.save
                 out.mkdir(parents=True, exist_ok=True)
                 path = out / time.strftime("%Y%m%d-%H%M%S.png")
-                cv2.imwrite(str(path), frame)
+                save_frame(path, frame)
                 print(f"    saved {path.relative_to(ROOT)}")
             if not args.loop:
                 break

@@ -1,4 +1,5 @@
 """USB webcam capture (V4L2) with optional locked focus/exposure."""
+import os
 import time
 
 import cv2
@@ -41,3 +42,22 @@ class Camera:
 
     def __exit__(self, *exc):
         self.release()
+
+
+def save_frame(path, frame):
+    """Write a PNG and force it to disk, so a power cut right after a click
+    can't leave an empty file (the SD card write cache is otherwise lost)."""
+    ok, png = cv2.imencode(".png", frame)
+    if not ok:
+        raise RuntimeError(f"Could not encode {path}")
+    tmp = f"{path}.tmp"
+    with open(tmp, "wb") as f:
+        f.write(png.tobytes())
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+    fd = os.open(os.path.dirname(os.path.abspath(path)), os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
