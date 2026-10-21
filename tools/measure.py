@@ -100,7 +100,10 @@ def main():
     print(f"Pin angle: {res['image']['pin_angle_deg']} deg   head at {res['image']['head_xy']}   tip at {res['image']['tip_xy']}")
     mm = res.get("mm", {})
     for k, v in res["px"].items():
-        extra = f"   {mm[k]:.3f} mm" if k in mm else ""
+        if k == "area" and "area_mm2" in mm:
+            extra = f"   {mm['area_mm2']:.3f} mm2"
+        else:
+            extra = f"   {mm[k]:.3f} mm" if k in mm else ""
         print(f"  {k:24s} {v:10.2f} px{extra}")
     for k, v in res["ratios"].items():
         print(f"  {k:24s} {v:10}")

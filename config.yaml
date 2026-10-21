@@ -19,6 +19,6 @@ segment:
   min_area_px: 100         # smallest blob (full-res pixels) treated as a pin
 
 measure:
-  mm_per_px: null          # scale; null = report pixels only (see README "Calibration")
+  mm_per_px: 0.1554       # 22 mm reference pin = 141.56 px (2026-10-21); recalibrate if the camera moves
   head_width_factor: 1.15  # head = end region wider than this x shaft width
   tip_width_factor: 0.85   # tip = end region narrower than this x shaft width
