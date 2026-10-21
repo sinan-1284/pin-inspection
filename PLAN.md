@@ -10,8 +10,8 @@ The plan builds step by step, so each milestone is usable on its own. It reuses 
 
 - [ ] Flash **Raspberry Pi OS 64-bit (Lite or Desktop)**, enable SSH, set hostname (e.g. `pin-station-01`), connect to Wi-Fi/Ethernet
 - [ ] Fit the **active cooler** and use the **official 27 W PSU** — under-powering or overheating makes the Pi throttle, which drops fps
-- [ ] Plug the webcam into a **USB 3 (blue) port**; check it with `v4l2-ctl --list-devices` and `v4l2-ctl --list-ctrls`
-- [ ] Project skeleton: `pin_inspection/` package, `tools/`, `tests/`, `config.yaml`, `requirements.txt`, own `venv/` (Python 3.11+, `opencv-python-headless` — no desktop GUI needed on the Pi)
+- [x] Plug the webcam into a **USB 3 (blue) port**; check it with `v4l2-ctl --list-devices` and `v4l2-ctl --list-ctrls`
+- [x] Project skeleton: `pin_inspection/` package, `tools/`, `tests/`, `config.yaml`, `requirements.txt`, own `venv/` (Python 3.11+, `opencv-python-headless` — no desktop GUI needed on the Pi)
 - [ ] Mount camera + backlight; confirm a clean silhouette (pin dark, background bright)
 - [ ] Lock camera focus and exposure (auto-exposure drifts and breaks thresholding)
 - [ ] Check speed on the Pi: target resolution (start at 640×480, go up only if detail is needed) and frames per second for the full pipeline
@@ -21,6 +21,8 @@ The plan builds step by step, so each milestone is usable on its own. It reuses 
 - [ ] Store samples under `tests/data/good/` and `tests/data/bad/<defect>/` (small, compressed)
 
 **Done when:** we have labelled images of good and bad pins from the real setup.
+
+**Progress (2026-10-21):** C920 detected on `/dev/video0`; full-res stills are 2560×1472 YUYV at ~2 fps (MJPG tops out at 1920×1080 / 30 fps — use that for live mode). Project skeleton, `venv/` and `tools/measure.py` are in place and measure a real pin repeatably. Currently front-lit on white paper (no backlight) with the pin ~140 px long — closer camera / backlight still to do.
 
 ## Milestone 1 — Core pipeline (offline, from images)
 

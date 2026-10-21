@@ -1,0 +1,24 @@
+# Pin inspection settings
+
+camera:
+  device: 0                # /dev/video0 (Logitech C920)
+  width: 2560              # full sensor res; uncompressed YUYV, ~2 fps
+  height: 1472
+  fourcc: YUYV
+  settle_s: 5              # let auto-exposure/focus settle before grabbing
+  # null = leave the camera on auto. Lock these once the station is set up,
+  # otherwise exposure drift changes the measured widths.
+  autofocus: null
+  focus: null              # 0-250, step 5
+  exposure: null           # 3-2047 (manual exposure units)
+
+segment:
+  search_margin: 0.25      # ignore this fraction of the frame on each side (paper edges, clutter)
+  bg_blur: 51              # median blur size used to estimate the background
+  upscale: 4               # measure on an upscaled crop for sub-pixel widths
+  min_area_px: 100         # smallest blob (full-res pixels) treated as a pin
+
+measure:
+  mm_per_px: null          # scale; null = report pixels only (see README "Calibration")
+  head_width_factor: 1.15  # head = end region wider than this x shaft width
+  tip_width_factor: 0.85   # tip = end region narrower than this x shaft width
