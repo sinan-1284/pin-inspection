@@ -22,7 +22,7 @@ The plan builds step by step, so each milestone is usable on its own. It reuses 
 
 **Done when:** we have labelled images of good and bad pins from the real setup.
 
-**Progress (2026-10-21):** C920 detected on `/dev/video0`; full-res stills are 2560×1472 YUYV at ~2 fps (MJPG tops out at 1920×1080 / 30 fps — use that for live mode). Project skeleton, `venv/` and `tools/measure.py` are in place and measure a real pin repeatably. Currently front-lit on white paper (no backlight) with the pin ~140 px long — closer camera / backlight still to do.
+**Progress (2026-10-21):** Calibrated at 0.1554 mm/px from a 22 mm pin. C920 detected on `/dev/video0`; full-res stills are 2560×1472 YUYV at ~2 fps (MJPG tops out at 1920×1080 / 30 fps — use that for live mode). Project skeleton, `venv/` and `tools/measure.py` are in place and measure a real pin repeatably. Currently front-lit on white paper (no backlight) with the pin ~140 px long — closer camera / backlight still to do.
 
 ## Milestone 1 — Core pipeline (offline, from images)
 
@@ -48,13 +48,15 @@ Improvements over the reference:
 ## Milestone 2 — Train & live inspection (CLI)
 
 - [ ] `tools/capture_images.py` — live preview, press `s` to save a good-pin image
-- [ ] `tools/train.py` — fit the model from a folder of good images, print per-image scores and the threshold
-- [ ] `tools/inspect.py` — live camera: overlay PASS/FAIL, score and features; `--image` mode for single files
+- [x] `tools/train.py` — fit the model from a folder of good images, print per-image scores and the threshold
+- [x] `tools/check_pin.py` (named so it doesn't shadow Python's `inspect`) — live camera / `--loop`, PASS/FAIL card with score and features; `--image` mode for files; `--save good|bad/<defect>` to collect samples
 - [ ] Score smoothing across a few frames so one noisy frame doesn't flip the result
-- [ ] Log every inspection to CSV (timestamp, result, score, features)
-- [ ] Handle "no pin in view" as its own state (not a FAIL)
+- [x] Log every inspection to CSV (timestamp, result, score, features)
+- [x] Handle "no pin in view" as its own state (not a FAIL)
 
 **Done when:** an operator can train on good pins and run live inspection on the real station.
+
+**Progress (2026-10-21):** tolerance checks + JSON Mahalanobis model work; `tools/evaluate.py` gives the confusion matrix. Trained on 5 frames of the one reference pin; correctly rejects photo-edited bent / headless / short versions of it. Still needed: 10–20 different good pins and real defective pins, then tighten tolerances from `train.py`'s suggestions.
 
 ## Milestone 3 — Health monitoring & Discord notifications
 

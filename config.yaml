@@ -22,3 +22,33 @@ measure:
   mm_per_px: 0.1554       # 22 mm reference pin = 141.56 px (2026-10-21); recalibrate if the camera moves
   head_width_factor: 1.15  # head = end region wider than this x shaft width
   tip_width_factor: 0.85   # tip = end region narrower than this x shaft width
+
+inspect:
+  # PASS needs every tolerance to hold (and the model score, once trained).
+  # [min, max]; null = no limit. Lengths in mm (needs mm_per_px above),
+  # ratios unitless. Starting values from the 22 mm reference pin — tune
+  # them with `tools/train.py`, which prints limits suggested by good pins.
+  tolerances:
+    length: [21.4, 22.6]               # wrong length / missing tip
+    shaft_width: [0.85, 1.25]          # wrong wire gauge
+    head_width: [1.25, 2.4]            # misshapen head
+    straightness_max_dev: [null, 0.25] # bent shaft
+    head_symmetry: [0.45, null]        # off-centre / lopsided head (loose: head edge is faint when front-lit)
+    head_shaft_ratio: [1.2, null]      # missing or flattened-out head
+    tip_angle_deg: [null, 75]          # blunt / broken tip
+
+model:
+  path: models/model.json
+  # Features the good-pin model learns, with the smallest spread (1 sigma)
+  # to assume for each, so a handful of near-identical good pins can't make
+  # the model reject normal measurement noise (~0.25-0.75 px).
+  features:
+    length: 0.08
+    shaft_width: 0.04
+    head_width: 0.12
+    head_thickness: 0.08
+    tip_length: 0.12
+    straightness_max_dev: 0.04
+    head_symmetry: 0.05
+  threshold_multiplier: 1.5   # threshold = multiplier x worst good-pin score ...
+  min_threshold: 4.0          # ... but never below this many sigma

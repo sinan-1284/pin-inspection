@@ -23,3 +23,6 @@ saved_frame_*.png
 .vscode/
 .idea/
 .DS_Store
+
+# Sample images (large; keep on the station)
+data/

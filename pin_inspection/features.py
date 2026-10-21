@@ -54,13 +54,16 @@ def measure(aligned, scale, cfg):
     max_dev = float(np.abs(resid).max())
     rms_dev = float(np.sqrt(np.mean(resid ** 2)))
 
-    # Head symmetry about the shaft axis (extrapolated into the head).
+    # Head symmetry about the shaft axis (extrapolated into the head): compare
+    # the head's area on each side of the axis. Summing over the head region
+    # is far less noisy than comparing single extreme columns on a small head.
     hx = np.arange(0, max(head_end, 1))
     axis_y = np.polyval(coef, hx)
-    above = float((axis_y - top[hx]).max())
-    below = float((bottom[hx] - axis_y).max())
+    above_px = np.clip(axis_y - top[hx], 0, None)
+    below_px = np.clip(bottom[hx] - axis_y, 0, None)
+    above, below = float(above_px.sum()), float(below_px.sum())
     head_sym = min(above, below) / max(above, below) if max(above, below) > 0 else 0.0
-    head_offset = (below - above) / 2
+    head_offset = float((below_px - above_px).mean()) / 2
 
     # Tip angle from the taper length and the shaft half-width.
     tip_angle = float(np.degrees(2 * np.arctan2(shaft_w / 2, tip_len))) if tip_len else None

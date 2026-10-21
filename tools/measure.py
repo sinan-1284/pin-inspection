@@ -17,30 +17,12 @@ import cv2
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from pin_inspection.align import align  # noqa: E402
 from pin_inspection.capture import Camera  # noqa: E402
 from pin_inspection.config import load_config  # noqa: E402
-from pin_inspection.features import measure  # noqa: E402
-from pin_inspection.segment import segment  # noqa: E402
+from pin_inspection.overlay import annotate  # noqa: E402
+from pin_inspection.pipeline import analyse  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-
-
-def annotate(frame, seg, al, zoom=6):
-    x, y, w, h = seg.roi
-    crop = cv2.resize(frame[y:y + h, x:x + w], None, fx=zoom, fy=zoom, interpolation=cv2.INTER_CUBIC)
-    mask = cv2.resize(seg.mask, (crop.shape[1], crop.shape[0]), interpolation=cv2.INTER_NEAREST)
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    cv2.drawContours(crop, contours, -1, (0, 200, 0), 1)
-    f = zoom / seg.scale
-    head = tuple(int(v * f) for v in al.head_xy)
-    tip = tuple(int(v * f) for v in al.tip_xy)
-    cv2.line(crop, head, tip, (255, 120, 0), 1)
-    cv2.circle(crop, head, 6, (0, 0, 255), 2)
-    cv2.putText(crop, "head", (head[0] + 10, head[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-    cv2.circle(crop, tip, 6, (255, 0, 255), 2)
-    cv2.putText(crop, "tip", (tip[0] + 10, tip[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 2)
-    return crop
 
 
 def profile_plot(profile, scale_label="px"):
@@ -78,18 +60,10 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(out_dir / "frame.png"), frame)
 
-    seg = segment(frame, cfg["segment"])
-    if seg is None:
+    a = analyse(frame, cfg)
+    if a is None:
         sys.exit("No pin found in view")
-    al = align(seg.mask)
-    res = measure(al.mask, seg.scale, cfg["measure"])
-    x, y, w, h = seg.roi
-    res["image"] = {
-        "frame_size": [frame.shape[1], frame.shape[0]],
-        "pin_angle_deg": round(al.angle_deg, 2),
-        "head_xy": [round(float(x + al.head_xy[0] / seg.scale), 1), round(float(y + al.head_xy[1] / seg.scale), 1)],
-        "tip_xy": [round(float(x + al.tip_xy[0] / seg.scale), 1), round(float(y + al.tip_xy[1] / seg.scale), 1)],
-    }
+    seg, al, res = a.seg, a.al, a.res
 
     cv2.imwrite(str(out_dir / "annotated.png"), annotate(frame, seg, al))
     cv2.imwrite(str(out_dir / "aligned_mask.png"), al.mask)

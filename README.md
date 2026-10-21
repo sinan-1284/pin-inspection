@@ -4,7 +4,7 @@ Machine vision quality control for **flat-head paper pins** on a production line
 
 The approach follows DDLC's existing [`machine_vision_pin`](https://github.com/AI-DDLC/machine_vision_pin) prototype: classical computer vision with a one-class model trained only on good pins — no deep learning, no GPU, and no need to collect examples of every defect.
 
-> **Status:** Milestone 0/1 in progress — camera capture, segmentation, alignment and shape measurement work on the real station. No PASS/FAIL model yet. See [PLAN.md](PLAN.md).
+> **Status:** Milestones 1–2 in progress — the station measures a pin and gives PASS / FAIL from mm tolerances plus a model trained on good pins. Needs more good and real bad samples to tune. See [PLAN.md](PLAN.md).
 
 ## Quick start (on the Pi)
 
@@ -17,6 +17,29 @@ venv/bin/python tools/measure.py --image frame.png     # measure a saved frame
 venv/bin/python tools/measure.py --mm-per-px 0.18      # also report millimetres
 venv/bin/python -m pytest -q tests                     # run tests (synthetic pins)
 ```
+
+## PASS / FAIL
+
+```bash
+venv/bin/python tools/check_pin.py                     # check the pin under the camera
+venv/bin/python tools/check_pin.py --loop              # keep checking (Ctrl-C to stop)
+venv/bin/python tools/check_pin.py --image a.png       # check saved frames
+
+# Teach it what a good pin looks like (10-20 pins, move each one a little)
+venv/bin/python tools/check_pin.py --save good
+venv/bin/python tools/train.py                         # -> models/model.json
+
+# Keep real defective pins as labelled samples, then measure accuracy
+venv/bin/python tools/check_pin.py --save bad/bent     # or bad/no_head, bad/short, ...
+venv/bin/python tools/evaluate.py                      # confusion matrix over data/good + data/bad
+```
+
+A pin **PASSES** only if every check holds:
+
+1. **Tolerances** (`inspect.tolerances` in `config.yaml`, in mm) — length, shaft width, head width, straightness, head symmetry, head/shaft ratio and tip angle. A FAIL names the measurement that is out of range.
+2. **Good-pin model** (once `tools/train.py` has run) — Mahalanobis distance of the pin's measurements from the trained good pins. It catches unusual combinations no single tolerance covers, and a FAIL lists the most unusual features in sigmas.
+
+Each check prints its value and limits, the latest result card is written to `captures/last_inspection.png`, and every result is appended to `inspection_log.csv`. `tools/train.py` also prints tolerance limits suggested by the spread of the good pins. Sample images (`data/`), models and logs stay on the station and are not committed.
 
 Each run saves to `captures/<timestamp>/`: the raw `frame.png`, an `annotated.png` close-up (outline, axis, head and tip), the `aligned_mask.png` (head left), a `width_profile.png` and the full `measurements.json`.
 
@@ -47,7 +70,7 @@ To get millimetres, measure something of known length in the same plane as the p
 - Logitech C920 on `/dev/video0`, looking straight down at the pin on white paper, front-lit (no backlight yet)
 - Captured at 2560×1472 uncompressed (YUYV, ~2 fps). A pin is about 140 px long and the shaft about 7 px wide at the current camera height
 - Measured on a 4× upscaled crop for sub-pixel edges. Repeat measurements of the same pin agree to about ±0.25 px for length and shaft width, and ±0.75 px for head width
-- To make the head features more reliable, move the camera closer (or zoom) so the pin fills more of the frame, and add a backlight for a clean silhouette
+- Head edges are faint when front-lit, so head width/symmetry vary by up to ~0.3 mm between frames; their tolerances are deliberately loose for now. To make the head features more reliable, move the camera closer (or zoom) so the pin fills more of the frame, and add a backlight for a clean silhouette
 
 ## How it will work
 
@@ -100,9 +123,16 @@ pin-inspection/
 │   ├── segment.py       # Find the pin, sub-pixel mask on an upscaled crop
 │   ├── align.py         # PCA rotation, head on the left
 │   ├── features.py      # Shape measurements
+│   ├── pipeline.py      # frame -> measurements
+│   ├── inspection.py    # PASS / FAIL from tolerances + model
+│   ├── model.py         # One-class good-pin model (JSON)
+│   ├── overlay.py       # Annotated close-up and result card
 │   └── health.py        # (planned) Health checks + Discord / MQTT notifications
 ├── tools/
-│   └── measure.py       # Measure the pin under the camera / in an image
+│   ├── measure.py       # Measure the pin under the camera / in an image
+│   ├── check_pin.py     # PASS / FAIL, save samples
+│   ├── train.py         # Train the good-pin model from data/good
+│   └── evaluate.py      # Confusion matrix over data/good + data/bad
 ├── app/                 # Web dashboard (later milestone)
 └── tests/               # Unit tests + sample images
 ```
