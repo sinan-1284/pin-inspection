@@ -43,6 +43,26 @@ Each check prints its value and limits, the latest result card is written to `ca
 
 Each run saves to `captures/<timestamp>/`: the raw `frame.png`, an `annotated.png` close-up (outline, axis, head and tip), the `aligned_mask.png` (head left), a `width_profile.png` and the full `measurements.json`.
 
+## Web dashboard
+
+```bash
+venv/bin/python tools/station.py              # then open http://<pi>:8080
+```
+
+The station checks the camera continuously and serves a dashboard in the DDLC theme (`app/dashboard.html`):
+
+- **Live view** — the latest PASS / FAIL card, with every measurement and its limits
+- **Counters** — pins inspected, pass, fail, pass rate and camera frames per second
+- **Recent pins** and **recent fails** (with the image of each fail)
+- **Buttons** — save the current pin as a good or labelled bad sample, retrain the model, reset the counters, download the CSV log
+- **Status** — camera running / error (the station keeps retrying) and whether a model is loaded
+
+A pin counts once: it starts when something appears in an empty view and ends when the view is empty again, and its result is the majority verdict over its frames (a tie is a FAIL). Glimpses shorter than `station.min_frames` frames are ignored. Every finished pin is appended to `inspection_log_station.csv`.
+
+## Presentation
+
+The DDLC AI presentation is in [`docs/`](docs/) and is published with GitHub Pages.
+
 ## Measurements
 
 | Measurement | Meaning |
@@ -127,13 +147,15 @@ pin-inspection/
 │   ├── inspection.py    # PASS / FAIL from tolerances + model
 │   ├── model.py         # One-class good-pin model (JSON)
 │   ├── overlay.py       # Annotated close-up and result card
+│   ├── tracker.py       # Per-frame verdicts -> one result per pin, counters
 │   └── health.py        # (planned) Health checks + Discord / MQTT notifications
 ├── tools/
 │   ├── measure.py       # Measure the pin under the camera / in an image
 │   ├── check_pin.py     # PASS / FAIL, save samples
 │   ├── train.py         # Train the good-pin model from data/good
 │   └── evaluate.py      # Confusion matrix over data/good + data/bad
-├── app/                 # Web dashboard (later milestone)
+├── app/                 # Web dashboard page served by tools/station.py
+├── docs/                # DDLC AI presentation (GitHub Pages)
 └── tests/               # Unit tests + sample images
 ```
 

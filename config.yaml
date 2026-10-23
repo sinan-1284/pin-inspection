@@ -56,3 +56,6 @@ model:
     head_symmetry: 0.05
   threshold_multiplier: 1.5   # threshold = multiplier x worst good-pin score ...
   min_threshold: 4.0          # ... but never below this many sigma
+
+station:
+  min_frames: 2               # frames a pin must be seen in to count (ignores flicker)

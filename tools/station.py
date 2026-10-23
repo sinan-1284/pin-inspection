@@ -1,14 +1,18 @@
-"""Live inspection station with a browser page for saving samples and training.
+"""Live inspection station with a web dashboard.
 
     venv/bin/python tools/station.py            # then open http://<pi>:8080
     venv/bin/python tools/station.py --port 9000
 
-The camera is checked continuously. The page shows the latest PASS/FAIL card
-and has buttons to save the current frame as a good / bad sample and to
-retrain the good-pin model from data/good/.
+The camera is checked continuously. The dashboard (app/dashboard.html) shows
+the live PASS/FAIL card, pass/fail counters, recent pins and recent fail
+images, and has buttons to save the current frame as a good / bad sample, to
+retrain the good-pin model from data/good/ and to reset the counters. Every
+finished pin is appended to inspection_log_station.csv.
 """
 import argparse
+import csv
 import json
+import re
 import subprocess
 import sys
 import threading
@@ -26,9 +30,13 @@ from pin_inspection.config import load_config  # noqa: E402
 from pin_inspection.inspection import check  # noqa: E402
 from pin_inspection.overlay import annotate, verdict_card  # noqa: E402
 from pin_inspection.pipeline import analyse  # noqa: E402
+from pin_inspection.tracker import PinTracker  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
+APP = ROOT / "app"
+LOG = ROOT / "inspection_log_station.csv"
+LOG_FIELDS = ["id", "time", "verdict", "failed", "frames", "seconds", "model_score", "length"]
 
 
 class Station:
@@ -39,7 +47,10 @@ class Station:
         self.frame = None
         self.card_png = None
         self.status = {"verdict": "STARTING", "checks": [], "failed": []}
+        self.tracker = PinTracker(min_frames=cfg.get("station", {}).get("min_frames", 2))
+        self.camera_ok = False
         self.message = "Starting camera..."
+        self.fps = None
         self.train_output = ""
         self.busy = False
 
@@ -59,14 +70,28 @@ class Station:
             lines = [(f"{n}: {v} [{lim}]", ok) for n, v, lim, ok in checks]
             card = verdict_card(annotate(a.frame, a.seg, a.al), verdict, lines)
         ok, png = cv2.imencode(".png", card)
+        png = png.tobytes()
         failed = [c[0] for c in checks if not c[3]]
         with self.lock:
             self.frame = frame
-            self.card_png = png.tobytes()
+            self.card_png = png
             self.status = {"verdict": verdict, "failed": failed,
                            "checks": [[n, v, lim, ok] for n, v, lim, ok in checks],
                            "time": time.strftime("%H:%M:%S")}
+            rec = self.tracker.update(verdict, failed, checks, png)
+        if rec:
+            self.log(rec)
         return verdict, failed, checks
+
+    def log(self, rec):
+        print(f"{rec['time'][11:]} pin #{rec['id']}: {rec['verdict']}"
+              + (f" ({', '.join(rec['failed'])})" if rec["failed"] else ""), flush=True)
+        new = not LOG.exists()
+        with open(LOG, "a", newline="") as f:
+            w = csv.DictWriter(f, LOG_FIELDS)
+            if new:
+                w.writeheader()
+            w.writerow({**rec, "failed": " ".join(rec["failed"])})
 
     def save(self, label):
         with self.lock:
@@ -76,6 +101,10 @@ class Station:
         out = DATA / label
         out.mkdir(parents=True, exist_ok=True)
         path = out / time.strftime("%Y%m%d-%H%M%S.png")
+        n = 1
+        while path.exists():  # two saves in the same second
+            path = out / time.strftime(f"%Y%m%d-%H%M%S-{n}.png")
+            n += 1
         save_frame(path, frame)
         good, bad = self.counts()
         msg = f"Saved {path.relative_to(ROOT)} (was {verdict}) — {good} good, {bad} bad samples"
@@ -98,14 +127,41 @@ class Station:
         finally:
             self.busy = False
 
+    def reset(self):
+        with self.lock:
+            self.tracker.reset()
+        return "Counters reset"
+
+    def snapshot(self):
+        good, bad = self.counts()
+        m = self.model
+        with self.lock:
+            tr = self.tracker
+            return {
+                "live": dict(self.status),
+                "stats": tr.stats(),
+                "recent": list(reversed(tr.recent))[:20],
+                "fails": [{"id": i, "failed": next((r["failed"] for r in tr.recent if r["id"] == i), [])}
+                          for i, _ in reversed(tr.fails)],
+                "camera": {"ok": self.camera_ok, "message": self.message, "fps": self.fps},
+                "model": f"Model: {m.n_train} good pins, threshold {m.threshold:.1f}" if m else None,
+                "samples": {"good": good, "bad": bad},
+            }
+
     def run_camera(self):
         last = None
         while True:
             try:
                 with Camera(self.cfg["camera"]) as cam:
-                    self.message = "Camera running"
+                    self.camera_ok, self.message = True, "Camera running"
+                    t_prev = time.time()
                     while True:
                         verdict, failed, checks = self.process(cam.read())
+                        now = time.time()
+                        dt, t_prev = now - t_prev, now
+                        if dt > 0:
+                            f = 1 / dt
+                            self.fps = round(f if self.fps is None else 0.8 * self.fps + 0.2 * f, 1)
                         line = verdict + (f" ({', '.join(failed)})" if failed else "")
                         if line != last:  # only log changes, not every frame
                             vals = {n: v for n, v, _, _ in checks}
@@ -113,51 +169,11 @@ class Station:
                                      f"head={vals.get('head_width')} score={vals.get('model_score')}") if checks else ""
                             print(f"{time.strftime('%H:%M:%S')} {line}{extra}", flush=True)
                             last = line
-            except RuntimeError as e:
+            except Exception as e:  # keep the station alive and show the problem on the dashboard
+                self.camera_ok, self.fps = False, None
                 self.message = f"Camera error: {e} — retrying"
                 print(self.message, flush=True)
                 time.sleep(2)
-
-
-PAGE = """<!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pin Station</title>
-<style>
- body{font-family:system-ui,sans-serif;margin:0;background:#f4f4f4;color:#222}
- header{padding:12px 16px;background:#222;color:#fff;font-size:18px}
- main{display:flex;flex-wrap:wrap;gap:16px;padding:16px}
- #card{max-width:100%;max-height:80vh;border:1px solid #ccc;background:#fff}
- .side{flex:1;min-width:260px}
- button{font-size:17px;padding:12px 16px;margin:4px 4px 4px 0;border:0;border-radius:6px;cursor:pointer;color:#fff}
- .good{background:#0a0}.bad{background:#c22}.train{background:#246}
- #msg{margin:10px 0;font-weight:600}
- pre{background:#fff;border:1px solid #ccc;padding:8px;white-space:pre-wrap;font-size:12px;max-height:45vh;overflow:auto}
- input{font-size:15px;padding:8px;width:130px}
-</style></head><body>
-<header>Pin Station — <span id="counts"></span> — model: <span id="model"></span></header>
-<main>
- <img id="card" alt="latest result">
- <div class="side">
-  <button class="good" onclick="post('/save?label=good')">Save as GOOD</button><br>
-  <input id="defect" value="bent" title="defect name">
-  <button class="bad" onclick="post('/save?label=bad/'+encodeURIComponent(document.getElementById('defect').value))">Save as BAD</button><br>
-  <button class="train" onclick="post('/train')">Train model</button>
-  <div id="msg"></div>
-  <pre id="out"></pre>
- </div>
-</main>
-<script>
-async function post(u){document.getElementById('msg').textContent='...';
- const r=await fetch(u,{method:'POST'});const j=await r.json();
- document.getElementById('msg').textContent=j.message; if(j.train_output)document.getElementById('out').textContent=j.train_output;}
-async function tick(){
- try{const s=await (await fetch('/status')).json();
-  document.getElementById('counts').textContent=s.good+' good / '+s.bad+' bad samples';
-  document.getElementById('model').textContent=s.model;
-  document.getElementById('card').src='/card.png?t='+Date.now();}catch(e){}
- setTimeout(tick,700);}
-tick();
-</script></body></html>"""
 
 
 def make_handler(st):
@@ -165,11 +181,13 @@ def make_handler(st):
         def log_message(self, *a):
             pass
 
-        def send(self, code, body, ctype):
+        def send(self, code, body, ctype, extra=None):
             try:
                 self.send_response(code)
                 self.send_header("Content-Type", ctype)
                 self.send_header("Cache-Control", "no-store")
+                for k, v in (extra or {}).items():
+                    self.send_header(k, v)
                 self.end_headers()
                 self.wfile.write(body)
             except (BrokenPipeError, ConnectionResetError):
@@ -181,7 +199,9 @@ def make_handler(st):
         def do_GET(self):
             path = urlparse(self.path).path
             if path == "/":
-                self.send(200, PAGE.encode(), "text/html; charset=utf-8")
+                self.send(200, (APP / "dashboard.html").read_bytes(), "text/html; charset=utf-8")
+            elif path == "/logo.svg":
+                self.send(200, (APP / "ddlc-logo.svg").read_bytes(), "image/svg+xml")
             elif path == "/card.png":
                 with st.lock:
                     png = st.card_png
@@ -189,14 +209,19 @@ def make_handler(st):
                     self.send(503, b"", "text/plain")
                 else:
                     self.send(200, png, "image/png")
-            elif path == "/status":
-                good, bad = st.counts()
+            elif m := re.fullmatch(r"/fail/(\d+)\.png", path):
                 with st.lock:
-                    s = dict(st.status)
-                m = st.model
-                s.update(good=good, bad=bad, message=st.message,
-                         model=f"trained on {m.n_train}, threshold {m.threshold:.1f}" if m else "not trained")
-                self.json(s)
+                    png = st.tracker.fail_card(int(m.group(1)))
+                if png is None:
+                    self.send(404, b"not found", "text/plain")
+                else:
+                    self.send(200, png, "image/png")
+            elif path == "/log.csv":
+                body = LOG.read_bytes() if LOG.exists() else (",".join(LOG_FIELDS) + "\n").encode()
+                self.send(200, body, "text/csv",
+                          {"Content-Disposition": 'attachment; filename="inspection_log_station.csv"'})
+            elif path == "/status":
+                self.json(st.snapshot())
             else:
                 self.send(404, b"not found", "text/plain")
 
@@ -211,6 +236,8 @@ def make_handler(st):
             elif u.path == "/train":
                 msg = st.train()
                 self.json({"message": msg, "train_output": st.train_output})
+            elif u.path == "/reset":
+                self.json({"message": st.reset()})
             else:
                 self.send(404, b"not found", "text/plain")
 

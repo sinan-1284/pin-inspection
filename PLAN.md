@@ -102,10 +102,12 @@ Improvements over the reference:
 
 Browser UI in the style of [`AI-DDLC/generic`](https://github.com/AI-DDLC/generic) (FastAPI + DDLC theme):
 
-- [ ] Live video with PASS/FAIL overlay
-- [ ] Train mode (password-protected): capture good pins and retrain from the browser
-- [ ] Results view: pass/fail counters, recent fails with images, CSV export
+- [x] Live view with PASS/FAIL card
+- [ ] Train mode (password-protected): capture good pins and retrain from the browser — works, but no password yet
+- [x] Results view: pass/fail counters, recent fails with images, CSV export
 - [ ] Settings: camera selection, exposure, sensitivity (`threshold_multiplier`)
+
+**Progress (2026-10-23):** `tools/station.py` serves a DDLC-themed dashboard (`app/dashboard.html`): counters, pass rate, fps, recent pins, recent fail images, save / train / reset buttons and CSV download. `pin_inspection/tracker.py` turns per-frame verdicts into one result per pin. Tested with a simulated camera; still to run on the real station.
 
 ## Milestone 6 — Hardening
 

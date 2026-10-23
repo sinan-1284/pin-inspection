@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDLC AI · Pin Inspection</title>
+<style>
+  :root {
+    --green: #008100; --green-dark: #002D07; --green-soft: #E7F3E6; --paper: #F4F7F3;
+    --white: #FFFFFF; --ink: #10241A; --body: #42554A; --muted: #66786D; --line: #D5E3D3;
+    --fail: #C2410C; --fail-soft: #FBEAE2; --warn: #9A6B00;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, "Segoe UI", Roboto, Arial, sans-serif; background: var(--paper); color: var(--ink); }
+  header { background: var(--white); border-top: 6px solid var(--green); border-bottom: 1px solid var(--line);
+           padding: 12px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  header img { height: 30px; }
+  header h1 { font-size: 20px; font-weight: 650; }
+  header .grow { flex: 1; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; padding: 5px 12px; border-radius: 999px;
+          background: var(--green-soft); color: #0B5A16; font-weight: 600; }
+  .chip.bad { background: var(--fail-soft); color: var(--fail); }
+  .chip.idle { background: #EEF0EC; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+  main { padding: 20px; display: grid; gap: 20px; max-width: 1500px; margin: 0 auto; }
+
+  .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .tile { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .tile .k { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 600; }
+  .tile .v { font-size: 34px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .tile.pass .v { color: var(--green); }
+  .tile.fail .v { color: var(--fail); }
+
+  .live { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); gap: 20px; }
+  .panel { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .panel h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 12px; }
+  #card { width: 100%; border-radius: 8px; border: 1px solid var(--line); background: #FAFAF8; display: block; min-height: 200px; }
+  .verdict { font-size: 44px; font-weight: 800; padding: 14px 18px; border-radius: 10px; color: var(--white);
+             background: var(--muted); text-align: center; letter-spacing: 1px; }
+  .verdict.PASS { background: var(--green); }
+  .verdict.FAIL { background: var(--fail); }
+  .checks { list-style: none; margin: 14px 0; font-size: 15px; }
+  .checks li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .checks li.bad { color: var(--fail); font-weight: 650; }
+  .checks .lim { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  button { font: inherit; font-size: 15px; font-weight: 650; padding: 11px 12px; border: 0; border-radius: 8px; cursor: pointer; color: var(--white); }
+  button:disabled { opacity: .5; cursor: wait; }
+  .b-good { background: var(--green); } .b-bad { background: var(--fail); } .b-train { background: var(--green-dark); } .b-plain { background: #5F6F64; }
+  .defect { display: flex; gap: 8px; grid-column: span 2; }
+  .defect input { flex: 1; font: inherit; font-size: 15px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+  #msg { margin-top: 10px; font-size: 14px; color: var(--body); min-height: 20px; }
+  pre { margin-top: 10px; font-size: 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px;
+        max-height: 220px; overflow: auto; white-space: pre-wrap; display: none; }
+
+  .lower { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); gap: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 6px 8px; border-bottom: 2px solid var(--green); }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  td .tag { font-weight: 700; } td .tag.PASS { color: var(--green); } td .tag.FAIL { color: var(--fail); }
+  .empty { color: var(--muted); font-size: 14px; padding: 12px 0; }
+  .fails { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .fails a { display: block; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #FAFAF8; text-decoration: none; color: var(--body); font-size: 12px; }
+  .fails img { width: 100%; display: block; }
+  .fails span { display: block; padding: 4px 8px; }
+  footer { text-align: center; font-size: 13px; color: var(--muted); padding: 10px 0 24px; }
+  footer a { color: var(--green); }
+
+  @media (max-width: 900px) {
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+    .live, .lower { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <img src="/logo.svg" alt="DDLC">
+  <h1>Pin Inspection</h1>
+  <span class="grow"></span>
+  <span id="cam" class="chip idle"><span class="dot"></span><span>Camera…</span></span>
+  <span id="model" class="chip idle"><span class="dot"></span><span>Model…</span></span>
+</header>
+
+<main>
+  <section class="tiles">
+    <div class="tile"><div class="k">Inspected</div><div class="v" id="t-total">0</div></div>
+    <div class="tile pass"><div class="k">Pass</div><div class="v" id="t-pass">0</div></div>
+    <div class="tile fail"><div class="k">Fail</div><div class="v" id="t-fail">0</div></div>
+    <div class="tile"><div class="k">Pass rate</div><div class="v" id="t-rate">–</div></div>
+    <div class="tile"><div class="k">Frames / s</div><div class="v" id="t-fps">–</div></div>
+  </section>
+
+  <section class="live">
+    <div class="panel">
+      <h2>Live view</h2>
+      <img id="card" alt="Latest inspection card">
+    </div>
+    <div class="panel">
+      <h2>Current pin</h2>
+      <div id="verdict" class="verdict">…</div>
+      <ul id="checks" class="checks"></ul>
+      <div class="actions">
+        <button class="b-good" onclick="post('/save?label=good', this)">Save as GOOD</button>
+        <button class="b-train" onclick="post('/train', this)">Train model</button>
+        <div class="defect">
+          <input id="defect" value="bent" aria-label="Defect name">
+          <button class="b-bad" onclick="post('/save?label=bad/' + encodeURIComponent(document.getElementById('defect').value), this)">Save as BAD</button>
+        </div>
+        <button class="b-plain" onclick="if (confirm('Reset the counters?')) post('/reset', this)">Reset counters</button>
+        <button class="b-plain" onclick="location.href='/log.csv'">Download CSV</button>
+      </div>
+      <div id="msg"></div>
+      <pre id="out"></pre>
+    </div>
+  </section>
+
+  <section class="lower">
+    <div class="panel">
+      <h2>Recent pins</h2>
+      <table>
+        <thead><tr><th>#</th><th>Time</th><th>Result</th><th>Reason</th><th>Length</th><th>Score</th></tr></thead>
+        <tbody id="recent"></tbody>
+      </table>
+      <div id="recent-empty" class="empty">No pins inspected yet. Place a pin under the camera, then remove it.</div>
+    </div>
+    <div class="panel">
+      <h2>Recent fails</h2>
+      <div id="fails" class="fails"></div>
+      <div id="fails-empty" class="empty">No fails yet.</div>
+    </div>
+  </section>
+</main>
+<footer><span id="samples"></span> · counting since <span id="since"></span> · <a href="/log.csv">inspection log</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+let lastFails = '';
+
+async function post(url, btn) {
+  btn.disabled = true; $('msg').textContent = 'Working…';
+  try {
+    const j = await (await fetch(url, {method: 'POST'})).json();
+    $('msg').textContent = j.message;
+    if (j.train_output) { $('out').textContent = j.train_output; $('out').style.display = 'block'; }
+  } catch (e) { $('msg').textContent = 'Station not reachable'; }
+  btn.disabled = false;
+}
+
+function chip(el, cls, text) { el.className = 'chip ' + cls; el.lastElementChild.textContent = text; }
+
+async function tick() {
+  try {
+    const s = await (await fetch('/status')).json();
+    chip($('cam'), s.camera.ok ? '' : 'bad', s.camera.message);
+    chip($('model'), s.model ? '' : 'idle', s.model || 'Model not trained (tolerances only)');
+
+    const st = s.stats;
+    $('t-total').textContent = st.inspected;
+    $('t-pass').textContent = st.pass;
+    $('t-fail').textContent = st.fail;
+    $('t-rate').textContent = st.pass_rate == null ? '–' : st.pass_rate + '%';
+    $('t-fps').textContent = s.camera.fps == null ? '–' : s.camera.fps;
+    $('since').textContent = st.since;
+    $('samples').textContent = `${s.samples.good} good / ${s.samples.bad} bad samples`;
+
+    const v = s.live.verdict;
+    $('verdict').className = 'verdict ' + v;
+    $('verdict').textContent = v === 'NO_PIN' ? 'NO PIN' : v;
+    $('checks').innerHTML = s.live.checks.map(([n, val, lim, ok]) =>
+      `<li class="${ok ? '' : 'bad'}"><span>${esc(n)}</span><span>${esc(val)} <span class="lim">[${esc(lim)}]</span></span></li>`).join('');
+
+    $('recent').innerHTML = s.recent.map(r =>
+      `<tr><td>${r.id}</td><td>${esc(r.time.slice(11))}</td><td><span class="tag ${r.verdict}">${r.verdict}</span></td>` +
+      `<td>${esc(r.failed.join(', ') || '–')}</td><td>${esc(r.length ?? '–')}</td><td>${esc(r.model_score ?? '–')}</td></tr>`).join('');
+    $('recent-empty').style.display = s.recent.length ? 'none' : 'block';
+
+    const key = s.fails.map(f => f.id).join(',');
+    if (key !== lastFails) {
+      lastFails = key;
+      $('fails').innerHTML = s.fails.map(f =>
+        `<a href="/fail/${f.id}.png" target="_blank"><img src="/fail/${f.id}.png" alt="Fail #${f.id}" loading="lazy"><span>#${f.id} · ${esc(f.failed.join(', '))}</span></a>`).join('');
+      $('fails-empty').style.display = s.fails.length ? 'none' : 'block';
+    }
+    $('card').src = '/card.png?t=' + Date.now();
+  } catch (e) {
+    chip($('cam'), 'bad', 'Station not reachable');
+  }
+  setTimeout(tick, 800);
+}
+tick();
+</script>
+</body>
+</html>
