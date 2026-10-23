@@ -32,89 +32,70 @@
   .slide {
     position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
     background: var(--white); padding: 128px 128px 160px;
-    display: flex; flex-direction: column; gap: 52px;
-    opacity: 0; pointer-events: none; transition: opacity .35s ease;
+    display: flex; flex-direction: column; gap: 56px;
+    opacity: 0; pointer-events: none; transition: opacity .4s ease;
   }
   .slide.active { opacity: 1; pointer-events: auto; }
   .slide.paper { background: var(--paper); }
   .slide.dark { background: var(--green-dark); color: var(--white); }
   .slide.brand { background: var(--green); color: var(--white); }
-  /* thin DDLC green bar on light slides */
   .slide:not(.dark):not(.brand)::before { content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 10px; background: var(--green); }
 
   .eyebrow { font-size: 24px; letter-spacing: 3px; text-transform: uppercase; color: var(--green); font-weight: 600; }
   .dark .eyebrow { color: #7BCB7B; }
   .brand .eyebrow { color: #DDF2DD; }
   .head { display: flex; flex-direction: column; gap: 16px; }
-  h1 { font-family: var(--display); font-size: 120px; font-weight: 700; line-height: 1.05; }
-  h2 { font-family: var(--display); font-size: 72px; font-weight: 700; line-height: 1.1; }
-  h3 { font-family: var(--display); font-size: 36px; font-weight: 600; line-height: 1.2; }
-  p.lead { font-size: 32px; color: var(--body); line-height: 1.4; max-width: 1450px; }
+  h1 { font-family: var(--display); font-size: 120px; font-weight: 700; line-height: 1.02; letter-spacing: -1px; }
+  h2 { font-family: var(--display); font-size: 72px; font-weight: 700; line-height: 1.08; letter-spacing: -0.5px; }
+  h3 { font-family: var(--display); font-size: 40px; font-weight: 600; line-height: 1.15; }
+  .statement { font-family: var(--display); font-size: 96px; font-weight: 700; line-height: 1.08; letter-spacing: -1px; max-width: 1600px; }
+  p.lead { font-size: 34px; color: var(--body); line-height: 1.4; max-width: 1450px; }
   .dark p.lead { color: var(--on-dark); }
-  .muted { color: var(--body); }
+  .brand p.lead { color: #E3F4E3; }
+  .hl { color: var(--green); }
+  .dark .hl { color: #7BCB7B; }
   .footer { position: absolute; left: 128px; right: 128px; bottom: 60px; display: flex; justify-content: space-between; align-items: center; font-size: 24px; color: var(--muted); }
   .footer img { height: 34px; }
   .dark .footer, .brand .footer { color: var(--on-dark); }
 
   .grid { display: grid; gap: 32px; }
-  .card { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 36px 40px; display: flex; flex-direction: column; gap: 14px; }
-  .paper .card { background: var(--white); }
+  .card { background: var(--white); border: 1px solid var(--line); border-radius: 16px; padding: 40px; display: flex; flex-direction: column; gap: 16px; }
   .card p { font-size: 28px; color: var(--body); line-height: 1.4; }
-  .card.top-fail { border-top: 6px solid var(--fail); padding: 32px; }
-  .card.top-fail p { font-size: 24px; }
   .card.left { border-left: 6px solid var(--green); }
-  .card.soft { background: var(--green-soft); border-color: var(--green-soft); }
   .dark .card { background: #0A3F12; border-color: #1C5A25; }
   .dark .card p { color: var(--on-dark); }
-  .icon { width: 56px; height: 56px; color: var(--green); }
-  .tag { display: inline-block; align-self: flex-start; font-size: 24px; font-weight: 600; padding: 6px 16px; border-radius: 999px; background: var(--green-soft); color: var(--green-mid); }
+  .big-word { font-family: var(--display); font-size: 64px; font-weight: 700; color: var(--green); line-height: 1; }
+  .tag { display: inline-block; font-size: 24px; font-weight: 600; padding: 6px 16px; border-radius: 999px; background: var(--green-soft); color: var(--green-mid); }
   .dark .tag { background: #1C5A25; color: #DDF2DD; }
+  .chips { display: flex; flex-wrap: wrap; gap: 12px; }
+  .chip-fail { font-size: 26px; font-weight: 600; padding: 10px 22px; border-radius: 999px; background: #FBEAE2; color: var(--fail); }
 
-  /* Pipeline */
-  .pipeline { display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; }
-  .step { position: relative; background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 32px 28px; display: flex; flex-direction: column; gap: 12px; }
-  .step .num { font-family: var(--display); font-size: 24px; font-weight: 700; color: var(--green); }
-  .step h3 { font-size: 34px; }
-  .step p { font-size: 24px; color: var(--body); line-height: 1.4; }
-  .step:not(:last-child)::after { content: "›"; position: absolute; right: -18px; top: 50%; transform: translateY(-50%); font-size: 44px; color: var(--green); font-weight: 700; }
-  .step.verdict { background: var(--green-dark); color: var(--white); border-color: var(--green-dark); }
-  .step.verdict p { color: var(--on-dark); }
-  .pill { display: inline-block; padding: 4px 14px; border-radius: 999px; font-weight: 600; font-size: 24px; color: var(--white); }
+  /* Flow */
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
+  .flow .step { position: relative; background: var(--white); border: 1px solid var(--line); border-radius: 16px; padding: 40px 36px; display: flex; flex-direction: column; gap: 16px; }
+  .flow .num { font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--green); }
+  .flow p { font-size: 28px; color: var(--body); line-height: 1.4; }
+  .flow .step:not(:last-child)::after { content: "›"; position: absolute; right: -26px; top: 50%; transform: translateY(-50%); font-size: 56px; color: var(--green); font-weight: 700; }
+  .flow .step.end { background: var(--green-dark); color: var(--white); border-color: var(--green-dark); }
+  .flow .step.end p { color: var(--on-dark); }
+  .pill { display: inline-block; padding: 4px 16px; border-radius: 999px; font-weight: 700; font-size: 26px; color: var(--white); }
   .pill.pass { background: var(--green); }
   .pill.fail { background: var(--fail); }
 
-  /* Table */
-  table { border-collapse: collapse; width: 100%; font-size: 28px; }
-  th { text-align: left; font-family: var(--display); font-size: 24px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); padding: 0 24px 14px 0; border-bottom: 2px solid var(--green); }
-  td { padding: 14px 24px 14px 0; border-bottom: 1px solid var(--line); line-height: 1.3; }
-  td:first-child { font-weight: 600; white-space: nowrap; }
-  td.muted { color: var(--body); }
-  .status { font-weight: 600; white-space: nowrap; }
-  .status.wip { color: var(--green); }
-  .status.todo { color: var(--muted); }
+  /* Comparison */
+  table { border-collapse: collapse; width: 100%; font-size: 30px; }
+  th { text-align: left; font-family: var(--display); font-size: 26px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); padding: 0 24px 16px 0; border-bottom: 2px solid var(--green); }
+  th.us { color: var(--green); }
+  td { padding: 18px 24px 18px 0; border-bottom: 1px solid var(--line); line-height: 1.3; color: var(--body); }
+  td:first-child { font-weight: 600; color: var(--ink); }
+  td.us { color: var(--green-mid); font-weight: 700; background: var(--green-soft); padding-left: 20px; }
+  th.us { padding-left: 20px; }
 
-  .stat { display: flex; flex-direction: column; gap: 10px; }
-  .stat .big { font-family: var(--display); font-size: 88px; font-weight: 700; line-height: 1; color: var(--green); }
-  .stat p { font-size: 28px; color: var(--body); line-height: 1.4; }
+  ul.ticks { list-style: none; display: flex; flex-direction: column; gap: 22px; }
+  ul.ticks li { font-size: 32px; line-height: 1.4; padding-left: 46px; position: relative; color: var(--body); }
+  ul.ticks li::before { content: ""; position: absolute; left: 0; top: 15px; width: 20px; height: 20px; border-radius: 4px; background: var(--green); }
 
-  .decision { display: grid; grid-template-columns: 1fr 110px 1fr 110px 340px; align-items: center; }
-  .op { font-family: var(--display); font-size: 56px; font-weight: 700; text-align: center; color: var(--green); }
-  .result { background: var(--green); color: var(--white); border-radius: 14px; padding: 40px; text-align: center; }
-  .result .big { font-family: var(--display); font-size: 72px; font-weight: 700; }
-  .result p { font-size: 26px; margin-top: 8px; }
-
-  ul.ticks { list-style: none; display: flex; flex-direction: column; gap: 20px; }
-  ul.ticks li { font-size: 30px; line-height: 1.4; padding-left: 44px; position: relative; color: var(--body); }
-  ul.ticks li::before { content: ""; position: absolute; left: 0; top: 14px; width: 18px; height: 18px; border-radius: 4px; background: var(--green); }
-  .dark ul.ticks li { color: var(--on-dark); }
-  .dark ul.ticks li::before { background: #7BCB7B; }
-
-  /* Mock screens */
-  .screen { background: var(--green-dark); border-radius: 16px; padding: 24px; display: grid; grid-template-columns: 1fr 320px; gap: 24px; color: var(--white); }
-  .screen .view { background: #EEF3EC; border-radius: 10px; display: flex; align-items: center; justify-content: center; min-height: 300px; }
-  .screen .side { display: flex; flex-direction: column; gap: 14px; }
-  .btn { border-radius: 8px; padding: 14px 18px; font-size: 24px; font-weight: 600; color: var(--white); text-align: center; }
-
+  /* Health mock */
   .dash { background: #0F1A12; border-radius: 18px; padding: 28px; display: flex; flex-direction: column; gap: 20px; color: #E6F2E6; }
   .dash .bar { display: flex; justify-content: space-between; align-items: center; font-size: 24px; color: #9DB8A0; }
   .dash .bar b { color: var(--white); font-family: var(--display); font-size: 28px; }
@@ -128,10 +109,15 @@
   .badge.soon { background: #3A3F2A; color: #F0E7B8; }
   .spark { height: 40px; }
 
-  .site { display: flex; flex-direction: column; gap: 18px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 40px; }
-  .site .letter { width: 84px; height: 84px; border-radius: 18px; background: var(--green); color: var(--white); font-family: var(--display); font-size: 48px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-  .site p { font-size: 26px; color: var(--body); line-height: 1.4; }
-  .chips { display: flex; flex-wrap: wrap; gap: 12px; }
+  /* Vision path */
+  .path { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; position: relative; }
+  .path .stop { padding: 0 40px 0 0; display: flex; flex-direction: column; gap: 18px; }
+  .path .dotline { height: 6px; background: #1C5A25; border-radius: 3px; position: relative; margin-bottom: 24px; }
+  .path .dotline::before { content: ""; position: absolute; left: 0; top: -12px; width: 30px; height: 30px; border-radius: 50%; background: #7BCB7B; }
+  .path .stop.now .dotline { background: #7BCB7B; }
+  .path .when { font-size: 24px; letter-spacing: 3px; text-transform: uppercase; color: #7BCB7B; font-weight: 600; }
+  .path p { font-size: 34px; color: var(--on-dark); line-height: 1.4; }
+  .path h3 { font-size: 60px; }
 
   #progress { position: fixed; left: 0; bottom: 0; height: 4px; background: var(--green); transition: width .3s; z-index: 10; }
   #hint { position: fixed; right: 16px; bottom: 12px; font: 13px var(--text); color: #7FA585; z-index: 10; opacity: .8; }
@@ -148,7 +134,7 @@
 <div id="stage">
 
 <!-- 1. Cover -->
-<section class="slide dark" style="padding-top:270px;gap:36px">
+<section class="slide dark" style="padding-top:290px;gap:40px">
   <img src="ddlc-logo-white.svg" alt="DDLC AI" style="position:absolute;left:128px;top:112px;height:96px">
   <svg viewBox="0 0 1664 120" style="position:absolute;left:128px;bottom:200px;width:1664px;height:120px;opacity:.9" aria-label="Silhouette of a flat-head pin with a measurement line">
     <rect x="0" y="30" width="22" height="80" rx="6" fill="#FFFFFF"/>
@@ -158,206 +144,120 @@
     <line x1="0" y1="0" x2="0" y2="20" stroke="#7BCB7B" stroke-width="3"/>
     <line x1="1580" y1="0" x2="1580" y2="20" stroke="#7BCB7B" stroke-width="3"/>
   </svg>
-  <p class="eyebrow">DDLC AI · Industrial Machine Vision</p>
-  <h1>DDLC AI<br>Pin Inspection</h1>
-  <p style="font-size:40px;color:var(--on-dark);line-height:1.3;max-width:1300px">Every pin measured, every defect caught, on low-cost edge hardware</p>
+  <p class="eyebrow">DDLC AI · Pin Inspection</p>
+  <h1>Every pin checked.<br><span class="hl">Every defect explained.</span></h1>
+  <p class="lead">AI vision quality control that runs on low-cost edge hardware, right on the production line.</p>
   <p style="position:absolute;left:128px;bottom:96px;font-size:30px;color:var(--on-dark)">Mohammed Sinan · DDLC AI · 2026</p>
 </section>
 
-<!-- 2. About DDLC AI -->
+<!-- 2. Problem -->
 <section class="slide">
   <div class="head">
-    <p class="eyebrow">01 · Who we are</p>
-    <h2>DDLC AI brings AI vision to the factory floor</h2>
-  </div>
-  <p class="lead">We build edge AI stations that see, measure and decide right on the production line. No cloud is needed to run them, and every machine is monitored remotely.</p>
-  <div class="grid" style="grid-template-columns:repeat(3,1fr)">
-    <div class="card left">
-      <h3>Vision on the edge</h3>
-      <p>Raspberry Pi 5 and NVIDIA Jetson stations with industrial cameras and lighting</p>
-    </div>
-    <div class="card left">
-      <h3>Connected to the line</h3>
-      <p>PLC, GPIO and relay outputs to sort, reject or stop machines</p>
-    </div>
-    <div class="card left">
-      <h3>Monitored 24/7</h3>
-      <p>Every machine reports its health to one live DDLC dashboard</p>
-    </div>
-  </div>
-  <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
-</section>
-
-<!-- 3. Problem -->
-<section class="slide paper">
-  <div class="head">
-    <p class="eyebrow">02 · The problem</p>
-    <h2>Checking pins by eye is slow and inconsistent</h2>
-  </div>
-  <p class="lead">Defects are tiny and easy to miss. Results depend on who is checking, and nothing is recorded.</p>
-  <div class="grid" style="grid-template-columns:repeat(5,1fr);gap:24px">
-    <div class="card top-fail"><h3>Bent shaft</h3><p>Shaft not straight</p></div>
-    <div class="card top-fail"><h3>Bad head</h3><p>Misshapen or off-centre</p></div>
-    <div class="card top-fail"><h3>No head</h3><p>Head missing or flattened</p></div>
-    <div class="card top-fail"><h3>Wrong length</h3><p>Too short or too long</p></div>
-    <div class="card top-fail"><h3>Blunt tip</h3><p>Broken or rounded point</p></div>
-  </div>
-  <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
-</section>
-
-<!-- 4. Solution -->
-<section class="slide">
-  <div class="head">
-    <p class="eyebrow">03 · Our solution</p>
-    <h2>A camera checks every pin and gives PASS or FAIL</h2>
+    <p class="eyebrow">The problem</p>
+    <h2>Defective pins slip through manual inspection</h2>
   </div>
   <div class="grid" style="grid-template-columns:repeat(3,1fr)">
-    <div class="card">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
-      <h3 style="font-size:44px">Classical vision</h3>
-      <p>Measures the pin’s shape directly. No deep learning, no GPU.</p>
-    </div>
-    <div class="card">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
-      <h3 style="font-size:44px">Learns from good pins</h3>
-      <p>Trained on 10–20 good pins. No need to collect every kind of defect.</p>
-    </div>
-    <div class="card">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>
-      <h3 style="font-size:44px">Low-cost hardware</h3>
-      <p>A Raspberry Pi 5 and a USB webcam, right on the line.</p>
-    </div>
+    <div class="card"><span class="big-word">Slow</span><p>People can’t look closely at every pin at line speed.</p></div>
+    <div class="card"><span class="big-word">Inconsistent</span><p>Results change with who is checking, and when.</p></div>
+    <div class="card"><span class="big-word">Unrecorded</span><p>No data on what failed, why, or how often.</p></div>
+  </div>
+  <div class="chips">
+    <span class="chip-fail">Bent shaft</span><span class="chip-fail">Misshapen head</span><span class="chip-fail">Missing head</span><span class="chip-fail">Wrong length</span><span class="chip-fail">Blunt tip</span>
   </div>
   <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
 </section>
 
-<!-- 5. Pipeline -->
+<!-- 3. Solution statement -->
+<section class="slide brand" style="justify-content:center;gap:48px">
+  <p class="eyebrow">Our solution</p>
+  <p class="statement">A camera that checks every pin in real time, says <u>PASS</u> or <u>FAIL</u>, and tells you why.</p>
+  <p class="lead">No deep learning, no GPU, no library of defect photos needed.</p>
+  <div class="footer"><img src="ddlc-logo-white.svg" alt="DDLC AI"><span class="pg"></span></div>
+</section>
+
+<!-- 4. How it works -->
 <section class="slide paper">
   <div class="head">
-    <p class="eyebrow">04 · How it works</p>
-    <h2>From camera frame to verdict in six steps</h2>
+    <p class="eyebrow">How it works</p>
+    <h2>See, measure, compare, decide</h2>
   </div>
-  <div class="pipeline">
-    <div class="step"><span class="num">01</span><h3>Capture</h3><p>Grab a frame from the webcam</p></div>
-    <div class="step"><span class="num">02</span><h3>Segment</h3><p>Find the pin’s outline against the paper</p></div>
-    <div class="step"><span class="num">03</span><h3>Align</h3><p>Rotate it level, head on the left</p></div>
-    <div class="step"><span class="num">04</span><h3>Measure</h3><p>Length, widths, straightness, symmetry</p></div>
-    <div class="step"><span class="num">05</span><h3>Score</h3><p>Compare with the good pins</p></div>
-    <div class="step verdict"><span class="num" style="color:#7BCB7B">06</span><h3>Verdict</h3><p><span class="pill pass">PASS</span> or <span class="pill fail">FAIL</span></p></div>
+  <div class="flow">
+    <div class="step"><span class="num">01 · See</span><h3>Camera</h3><p>A webcam above the line captures each pin.</p></div>
+    <div class="step"><span class="num">02 · Measure</span><h3>Shape</h3><p>Length, head, shaft, straightness and tip, in millimetres.</p></div>
+    <div class="step"><span class="num">03 · Compare</span><h3>Good pins</h3><p>Learned from just 10–20 good pins.</p></div>
+    <div class="step end"><span class="num" style="color:#7BCB7B">04 · Decide</span><h3>Verdict</h3><p><span class="pill pass">PASS</span> or <span class="pill fail">FAIL</span>, with the reason.</p></div>
   </div>
-  <p class="lead">Edges are measured on a 4× enlarged crop for sub-pixel accuracy, then converted to millimetres (0.155 mm per pixel).</p>
+  <p class="lead">Runs on a <b>Raspberry Pi 5</b> and a standard USB webcam.</p>
   <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
 </section>
 
-<!-- 6. Measurements -->
-<section class="slide" style="gap:40px">
-  <div class="head">
-    <p class="eyebrow">05 · What it measures</p>
-    <h2>Every pin becomes a set of numbers</h2>
-  </div>
-  <table>
-    <tr><th style="width:32%">Measurement</th><th style="width:44%">What it means</th><th>Catches</th></tr>
-    <tr><td>Length</td><td class="muted">Head end to tip, along the pin</td><td class="muted">Short / long, missing tip</td></tr>
-    <tr><td>Shaft width</td><td class="muted">Median width of the middle section</td><td class="muted">Wrong wire gauge</td></tr>
-    <tr><td>Head width &amp; thickness</td><td class="muted">Size of the flat head</td><td class="muted">Misshapen head</td></tr>
-    <tr><td>Head symmetry</td><td class="muted">1.0 = head perfectly centred</td><td class="muted">Off-centre head</td></tr>
-    <tr><td>Straightness</td><td class="muted">Shaft centreline vs. a straight line</td><td class="muted">Bent shaft</td></tr>
-    <tr><td>Head / shaft ratio</td><td class="muted">Scale-free proportion</td><td class="muted">Missing head</td></tr>
-    <tr><td>Tip angle</td><td class="muted">Angle of the tapered point</td><td class="muted">Blunt / broken tip</td></tr>
-  </table>
-  <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
-</section>
-
-<!-- 7. Decision -->
-<section class="slide paper">
-  <div class="head">
-    <p class="eyebrow">06 · The decision</p>
-    <h2>Two checks, both must pass</h2>
-  </div>
-  <div class="decision">
-    <div class="card left">
-      <h3>1 · Tolerances</h3>
-      <p>Each measurement must be inside its mm limits. A FAIL names the measurement that is out of range.</p>
-    </div>
-    <div class="op">+</div>
-    <div class="card left">
-      <h3>2 · Good-pin model</h3>
-      <p>Mahalanobis distance from the trained good pins. Catches unusual combinations no single limit covers.</p>
-    </div>
-    <div class="op">=</div>
-    <div class="result"><div class="big">PASS</div><p>only if both hold</p></div>
-  </div>
-  <p class="lead">Every FAIL explains itself, so operators can trust and act on the result.</p>
-  <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
-</section>
-
-<!-- 8. Operator station -->
+<!-- 5. Product -->
 <section class="slide">
   <div class="head">
-    <p class="eyebrow">07 · For the operator</p>
-    <h2>A live web dashboard for every station</h2>
+    <p class="eyebrow">The product</p>
+    <h2>A live dashboard for every station</h2>
   </div>
-  <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:56px;align-items:start">
+  <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:56px;align-items:start">
     <img src="dashboard.png" alt="DDLC AI Pin Inspection web dashboard" style="width:100%;max-height:640px;object-fit:contain;object-position:top;border:1px solid var(--line);border-radius:14px;background:var(--paper)">
     <ul class="ticks">
-      <li>Live PASS / FAIL card with every measurement and its limits</li>
-      <li>One click saves a good or labelled bad sample</li>
-      <li>One click retrains the model</li>
+      <li>Live PASS / FAIL with every measurement</li>
       <li>Counters, pass rate and recent fails with images</li>
-      <li>Every pin is logged and downloadable as CSV</li>
+      <li>One-click training from good pins</li>
+      <li>Every pin logged and exportable</li>
     </ul>
   </div>
   <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
 </section>
 
-<!-- 9. Results -->
-<section class="slide paper">
+<!-- 6. Why we win -->
+<section class="slide paper" style="gap:44px">
   <div class="head">
-    <p class="eyebrow">08 · Results so far</p>
-    <h2>Measuring real pins, repeatably</h2>
+    <p class="eyebrow">Why DDLC AI</p>
+    <h2>Built for real factories, not labs</h2>
   </div>
-  <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:40px">
-    <div class="stat"><span class="big">±0.25 px</span><p>Repeatability of length and shaft width on the same pin</p></div>
-    <div class="stat"><span class="big">0.155</span><p>mm per pixel, calibrated from a 22 mm reference pin</p></div>
-    <div class="stat"><span class="big">3 / 3</span><p>Defect types rejected in tests: bent, headless, short</p></div>
-    <div class="stat"><span class="big">16</span><p>Automated tests, all passing</p></div>
-  </div>
-  <p class="lead">Pipeline, calibration, PASS / FAIL, training and the browser station are working today.</p>
+  <table>
+    <tr><th style="width:30%"></th><th style="width:22%">Manual check</th><th style="width:24%">Typical AI vision</th><th class="us">DDLC AI</th></tr>
+    <tr><td>Consistent results</td><td>No</td><td>Yes</td><td class="us">Yes</td></tr>
+    <tr><td>Training data</td><td>—</td><td>Many defect photos</td><td class="us">10–20 good pins</td></tr>
+    <tr><td>Hardware</td><td>People</td><td>GPU workstation</td><td class="us">Raspberry Pi 5</td></tr>
+    <tr><td>Explains each fail</td><td>Sometimes</td><td>Rarely</td><td class="us">Always</td></tr>
+    <tr><td>Remote monitoring</td><td>No</td><td>Varies</td><td class="us">Built in</td></tr>
+  </table>
   <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
 </section>
 
-<!-- 10. Walk and Sign at scale -->
+<!-- 7. Traction: Walk and Sign -->
 <section class="slide dark">
   <div class="head">
-    <p class="eyebrow">09 · Already running at scale</p>
-    <h2>DDLC AI stations are live today: Walk and Sign</h2>
+    <p class="eyebrow">Traction</p>
+    <h2>DDLC AI already runs at scale: Walk and Sign</h2>
   </div>
   <div class="grid" style="grid-template-columns:1fr 1fr;gap:40px">
-    <div class="card" style="gap:18px">
+    <div class="card" style="gap:20px">
       <div style="display:flex;gap:24px;align-items:center">
         <div style="width:84px;height:84px;border-radius:18px;background:var(--green);font-family:var(--display);font-size:48px;font-weight:700;display:flex;align-items:center;justify-content:center">W</div>
         <h3 style="font-size:52px">Walk</h3>
       </div>
-      <p>Footwear identification on a factory conveyor. The camera names the article out of about 200 styles and estimates its size.</p>
-      <div class="chips"><span class="tag">AI vision</span><span class="tag">~200 articles</span><span class="tag">PLC-linked</span><span class="tag">Web dashboard</span></div>
+      <p>Footwear identification on a factory conveyor: names the article out of about 200 styles and estimates its size.</p>
+      <div class="chips"><span class="tag">~200 articles</span><span class="tag">PLC-linked</span><span class="tag">Web dashboard</span></div>
     </div>
-    <div class="card" style="gap:18px">
+    <div class="card" style="gap:20px">
       <div style="display:flex;gap:24px;align-items:center">
         <div style="width:84px;height:84px;border-radius:18px;background:var(--green);font-family:var(--display);font-size:48px;font-weight:700;display:flex;align-items:center;justify-content:center">S</div>
         <h3 style="font-size:52px">Sign</h3>
       </div>
-      <p>Footfall counting on an NVIDIA Jetson Orin Nano. It counts the people moving through a site, live.</p>
+      <p>Live footfall counting on an NVIDIA Jetson Orin Nano, counting the people moving through a site.</p>
       <div class="chips"><span class="tag">Jetson edge AI</span><span class="tag">People counting</span><span class="tag">Web dashboard</span></div>
     </div>
   </div>
-  <p class="lead">Both run around the clock, start on boot, are reachable securely from anywhere, and report to the DDLC health dashboard. Pin Inspection joins the same platform.</p>
+  <p class="lead">Both run around the clock, start on boot and are reachable securely from anywhere. Pin Inspection joins the same platform.</p>
   <div class="footer"><img src="ddlc-logo-white.svg" alt="DDLC AI"><span class="pg"></span></div>
 </section>
 
-<!-- 11. Health dashboard -->
+<!-- 8. Platform: health -->
 <section class="slide">
   <div class="head">
-    <p class="eyebrow">10 · Health monitoring</p>
+    <p class="eyebrow">The platform</p>
     <h2>One live dashboard for every machine</h2>
   </div>
   <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:56px;align-items:start">
@@ -385,53 +285,52 @@
       </div>
     </div>
     <ul class="ticks">
-      <li>Temperature, throttling, power and voltage</li>
-      <li>CPU, GPU, memory, disks and network</li>
-      <li>Services and each machine’s own app status</li>
+      <li>Temperature, power and throttling</li>
+      <li>CPU, GPU, memory, disk and network</li>
+      <li>Each machine’s own app status</li>
       <li>Healthy / Warning / Offline at a glance</li>
-      <li>Password-protected, behind a secure tunnel</li>
+      <li>Secure, password-protected access</li>
     </ul>
   </div>
-  <div class="footer"><span style="display:flex;gap:24px;align-items:center"><img src="ddlc-logo-green.svg" alt="DDLC AI"> health.ddlc.ai · dashboard shown as an illustration</span><span class="pg"></span></div>
+  <div class="footer"><span style="display:flex;gap:24px;align-items:center"><img src="ddlc-logo-green.svg" alt="DDLC AI"> health.ddlc.ai</span><span class="pg"></span></div>
 </section>
 
-<!-- 12. Future: DDLC AI V2 controller -->
+<!-- 9. Future: V2 -->
 <section class="slide paper">
   <div class="head">
-    <p class="eyebrow">11 · The future</p>
+    <p class="eyebrow">What’s next</p>
     <h2>DDLC AI V2: one controller for every line</h2>
   </div>
   <div class="grid" style="grid-template-columns:repeat(3,1fr)">
-    <div class="card left"><h3>NVIDIA Jetson Orin Nano</h3><p>On-board AI processing for heavier models</p></div>
-    <div class="card left"><h3>24 V industrial power</h3><p>Runs straight from factory power, with fuse protection</p></div>
-    <div class="card left"><h3>Sensors and relays</h3><p>Proximity and photoelectric inputs; isolated relay outputs</p></div>
-    <div class="card left"><h3>Instant status display</h3><p>An 8×8 RGB matrix shows the DDLC logo, network and AI status from power-on</p></div>
-    <div class="card left"><h3>Startup supervisor</h3><p>An ESP8266 keeps status alive while the AI computer boots</p></div>
-    <div class="card left"><h3>Rugged enclosure</h3><p>Modular prototype now, CNC-machined aluminium next</p></div>
+    <div class="card left"><h3>Jetson Orin Nano</h3><p>On-board AI for heavier models</p></div>
+    <div class="card left"><h3>24 V industrial</h3><p>Runs straight from factory power</p></div>
+    <div class="card left"><h3>Sensors &amp; relays</h3><p>Proximity and photoelectric inputs, relay outputs</p></div>
+    <div class="card left"><h3>Status at a glance</h3><p>RGB matrix shows the DDLC logo, network and AI status</p></div>
+    <div class="card left"><h3>Always alive</h3><p>A supervisor chip keeps status running while the AI boots</p></div>
+    <div class="card left"><h3>Rugged build</h3><p>CNC-machined aluminium enclosure</p></div>
   </div>
   <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
 </section>
 
-<!-- 13. Why DDLC AI -->
-<section class="slide dark">
+<!-- 10. Vision -->
+<section class="slide dark" style="gap:120px">
   <div class="head">
-    <p class="eyebrow">12 · Why it matters</p>
-    <h2>Built to scale across factories</h2>
+    <p class="eyebrow">The vision</p>
+    <h2>From pins to every small part, on every line</h2>
   </div>
-  <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:32px">
-    <div class="card"><h3>Low cost</h3><p>Edge hardware a small factory can afford, no cloud fees</p></div>
-    <div class="card"><h3>Fast to set up</h3><p>Teach it with a handful of good parts, not thousands of photos</p></div>
-    <div class="card"><h3>Proven platform</h3><p>The same stack already runs Walk and Sign around the clock</p></div>
-    <div class="card"><h3>One view for everything</h3><p>Every station reports to one live health dashboard</p></div>
+  <div class="path">
+    <div class="stop now"><div class="dotline"></div><span class="when">Today</span><h3>Pins</h3><p>Pin inspection with a live dashboard on a Raspberry Pi 5</p></div>
+    <div class="stop"><div class="dotline"></div><span class="when">Next</span><h3>More parts</h3><p>The same measure-and-compare approach for other small metal parts and connectors</p></div>
+    <div class="stop"><div class="dotline"></div><span class="when">Future</span><h3>Every line</h3><p>DDLC AI V2 controllers, all monitored from one DDLC platform</p></div>
   </div>
   <div class="footer"><img src="ddlc-logo-white.svg" alt="DDLC AI"><span class="pg"></span></div>
 </section>
 
-<!-- 14. Thank you -->
-<section class="slide brand" style="justify-content:center;align-items:flex-start;gap:36px">
-  <img src="ddlc-logo-white.svg" alt="DDLC AI" style="height:140px">
-  <h1 style="font-size:110px">Thank you</h1>
-  <p style="font-size:40px;color:#DDF2DD">DDLC AI · Pin Inspection · Questions?</p>
+<!-- 11. Close -->
+<section class="slide brand" style="justify-content:center;gap:40px">
+  <img src="ddlc-logo-white.svg" alt="DDLC AI" style="height:120px;align-self:flex-start">
+  <p class="statement">Let’s put DDLC AI on your production line.</p>
+  <p class="lead">Thank you · Questions?</p>
   <div class="footer"><span>Mohammed Sinan · DDLC AI</span><span class="pg"></span></div>
 </section>
 
