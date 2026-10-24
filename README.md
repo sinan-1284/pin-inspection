@@ -18,6 +18,25 @@ venv/bin/python tools/measure.py --mm-per-px 0.18      # also report millimetres
 venv/bin/python -m pytest -q tests                     # run tests (synthetic pins)
 ```
 
+## Dashboard
+
+```bash
+venv/bin/python tools/station.py      # then open http://<pi-address>:8080 (e.g. http://100.89.72.30:8080)
+```
+
+The station checks the camera continuously and records each pin **once**, when it has lain still for ~1.5 s (the view must clear before the next pin counts). The browser dashboard shows:
+
+- **Live view** — close-up of the pin with outline, axis, head and tip, plus the whole camera view (green / red box = pin, orange = rejected object)
+- **Current pin** — big PASS / FAIL / No pin / Clear view, with the failed checks
+- **Today** — pins inspected, passed, failed and pass rate
+- **Measurements** — each check's value against its limits
+- **Trends** — length, shaft width, bend and model score for the last 50 pins, with the tolerance band
+- **Recent inspections** — thumbnails and values, filterable to fails only
+- **Samples & training** — Save as GOOD / Save as BAD (with defect name) / Train model
+- **Station health** — CPU temperature, power supply, 5 V rail, throttling, disk, uptime
+
+Records go to `inspection_log_station.csv` and thumbnails to `captures/inspections/` (both stay on the Pi). The station picks the most pin-shaped object in view (about the nominal length, thin), so paper edges, creases and shadows are ignored; anything that isn't pin-sized shows as *Clear view* and is not counted.
+
 ## PASS / FAIL
 
 ```bash
@@ -127,13 +146,16 @@ pin-inspection/
 │   ├── inspection.py    # PASS / FAIL from tolerances + model
 │   ├── model.py         # One-class good-pin model (JSON)
 │   ├── overlay.py       # Annotated close-up and result card
-│   └── health.py        # (planned) Health checks + Discord / MQTT notifications
+│   ├── tracker.py       # One inspection per pin from the frame stream
+│   └── health.py        # Pi health readings (Discord / MQTT alerts planned)
+├── app/
+│   └── dashboard.html   # Browser dashboard served by tools/station.py
 ├── tools/
+│   ├── station.py       # Live station + dashboard server
 │   ├── measure.py       # Measure the pin under the camera / in an image
 │   ├── check_pin.py     # PASS / FAIL, save samples
 │   ├── train.py         # Train the good-pin model from data/good
 │   └── evaluate.py      # Confusion matrix over data/good + data/bad
-├── app/                 # Web dashboard (later milestone)
 └── tests/               # Unit tests + sample images
 ```
 

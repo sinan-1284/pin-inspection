@@ -56,3 +56,8 @@ model:
     head_symmetry: 0.05
   threshold_multiplier: 1.5   # threshold = multiplier x worst good-pin score ...
   min_threshold: 4.0          # ... but never below this many sigma
+
+station:
+  stable_frames: 3       # pin must be still for this many frames before it is counted (~1.5 s)
+  stable_tol_mm: 0.3     # "still" = measured length varies less than this
+  clear_frames: 2        # view must be empty this many frames before the next pin counts

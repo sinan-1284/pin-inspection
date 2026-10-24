@@ -59,3 +59,16 @@ def test_model_accepts_good_and_rejects_bad(cfg, good, tmp_path):
     assert model.score(measured(angle_deg=45)) <= model.threshold
     assert model.score(measured(angle_deg=45, length=270)) > model.threshold
     assert model.score(measured(angle_deg=45, bend=6)) > model.threshold
+
+
+def test_pin_found_next_to_longer_paper_edge(cfg):
+    """A paper edge bigger than the pin must not be picked instead of it."""
+    import cv2
+    from pin_inspection.pipeline import analyse
+    c = copy.deepcopy(cfg)
+    c["camera"]["pixel_aspect"] = 1
+    img = draw_pin(angle_deg=30, shaft_w=14, head_w=26)
+    cv2.line(img, (1000, 300), (1010, 720), (60, 60, 60), 6)  # ~5x the pin's length
+    a = analyse(img, c)
+    assert a is not None
+    assert a.res["mm"]["length"] == pytest.approx(22, abs=0.6)

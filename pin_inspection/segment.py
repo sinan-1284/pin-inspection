@@ -28,6 +28,35 @@ def _largest_component(mask, min_area):
     return (lab == i).astype(np.uint8) * 255, stats[i, :4]
 
 
+def _pin_like_component(mask, min_area, expected_len):
+    """Pick the blob that looks most like a pin, not simply the biggest.
+
+    Paper edges, creases and shadows can be far larger than the pin. With an
+    expected pin length (pixels), keep blobs whose long side is 0.6-1.6x that
+    and that are thin, and take the one closest to the expected length. Falls
+    back to the largest blob if nothing qualifies (the caller then decides it
+    is not a pin).
+    """
+    if not expected_len:
+        return _largest_component(mask, min_area)
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    best, best_err = None, None
+    for i in range(1, n):
+        if stats[i, cv2.CC_STAT_AREA] < min_area:
+            continue
+        pts = np.column_stack(np.nonzero(lab == i)[::-1]).astype(np.float32)
+        (_, _), (w, h), _ = cv2.minAreaRect(pts)
+        long_side, short_side = max(w, h), min(w, h)
+        if not (0.6 * expected_len <= long_side <= 1.6 * expected_len) or short_side > 0.25 * expected_len:
+            continue
+        err = abs(long_side - expected_len)
+        if best is None or err < best_err:
+            best, best_err = i, err
+    if best is None:
+        return _largest_component(mask, min_area)
+    return (lab == best).astype(np.uint8) * 255, stats[best, :4]
+
+
 def _fill_holes(mask):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     out = np.zeros_like(mask)
@@ -52,7 +81,7 @@ def segment(frame, cfg):
     # Coarse pass at full resolution to locate the pin.
     m = _foreground(search, cfg["bg_blur"])
     m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
-    blob, box = _largest_component(m, cfg["min_area_px"])
+    blob, box = _pin_like_component(m, cfg["min_area_px"], cfg.get("expected_length_px"))
     if blob is None:
         return None
     bx, by, bw, bh = box

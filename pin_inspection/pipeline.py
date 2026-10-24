@@ -25,10 +25,19 @@ def correct_aspect(frame, aspect):
     return cv2.resize(frame, (int(round(w / aspect)), h), interpolation=cv2.INTER_AREA)
 
 
+def expected_length_px(cfg):
+    """Nominal pin length in pixels (middle of the length tolerance), if calibrated."""
+    mmpp = cfg["measure"].get("mm_per_px")
+    lim = cfg.get("inspect", {}).get("tolerances", {}).get("length")
+    if not mmpp or not lim or None in lim:
+        return None
+    return (lim[0] + lim[1]) / 2 / mmpp
+
+
 def analyse(frame, cfg):
     """Segment, align and measure the pin in `frame`; None if no pin is found."""
     frame = correct_aspect(frame, cfg["camera"].get("pixel_aspect", 1))
-    seg = segment(frame, cfg["segment"])
+    seg = segment(frame, dict(cfg["segment"], expected_length_px=expected_length_px(cfg)))
     if seg is None:
         return None
     al = align(seg.mask)
