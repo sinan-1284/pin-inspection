@@ -33,6 +33,7 @@ The station checks the camera continuously (DDLC-themed page in `app/dashboard.h
 - **Trends** — length, shaft width, bend and model score for the last 50 pins, with the tolerance band
 - **Recent inspections** — thumbnails and values, filterable to fails only
 - **Samples & training** — Save as GOOD / Save as BAD (with defect name) / Train model / Reset counters / Download CSV
+- **Accuracy** — decision accuracy on the labelled samples (good pins passed, bad pins caught, per defect, which samples it got wrong), re-evaluated after every save / retrain; and measurement precision on pins lying still (± spread per check and its share of the tolerance: < 10 % excellent, < 30 % acceptable)
 - **Station health** — CPU temperature, power supply, 5 V rail, throttling, disk, uptime
 
 Records go to `inspection_log_station.csv` and thumbnails to `captures/inspections/` (both stay on the Pi). *Reset counters* restarts the counters and charts from that moment without deleting the log. The station picks the most pin-shaped object in view (about the nominal length, thin), so paper edges, creases and shadows are ignored; anything that isn't pin-sized shows as *Clear view* and is not counted.
@@ -50,7 +51,7 @@ venv/bin/python tools/train.py                         # -> models/model.json
 
 # Keep real defective pins as labelled samples, then measure accuracy
 venv/bin/python tools/check_pin.py --save bad/bent     # or bad/no_head, bad/short, ...
-venv/bin/python tools/evaluate.py                      # confusion matrix over data/good + data/bad
+venv/bin/python tools/evaluate.py                      # accuracy + confusion matrix over data/good + data/bad
 ```
 
 A pin **PASSES** only if every check holds:

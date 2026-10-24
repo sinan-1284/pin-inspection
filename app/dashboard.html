@@ -147,6 +147,34 @@ main { padding: 16px 20px 40px; max-width: 1500px; margin: 0 auto; display: grid
 .st-ok { color: var(--good-text); }
 .st-bad { color: var(--bad-text); font-weight: 600; }
 
+/* Accuracy */
+.acc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 24px; }
+.acc h3 { font-size: 13px; font-weight: 600; color: var(--text-2); margin: 0 0 10px; }
+.hero { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.hero .big { font-size: 52px; font-weight: 750; letter-spacing: -.02em; line-height: 1; }
+.hero .sub { color: var(--muted); font-size: 13px; }
+.rates { margin-top: 16px; display: grid; gap: 12px; }
+.rateline .top { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); margin-bottom: 5px; }
+.rateline .top b { color: var(--text); }
+.track { height: 10px; border-radius: 5px; background: var(--grid); overflow: hidden; }
+.track span { display: block; height: 100%; border-radius: 5px; }
+.chips2 { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.chips2 span { font-size: 12.5px; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); }
+.note { margin-top: 12px; font-size: 12.5px; color: var(--warn-text); background: var(--warn-bg); border-radius: 6px; padding: 8px 10px; display: none; }
+.wrong { margin-top: 10px; font-size: 12.5px; color: var(--bad-text); }
+.prec { width: 100%; border-collapse: collapse; font-size: 13px; }
+.prec th { text-align: left; font-weight: 500; color: var(--muted); padding: 0 8px 8px; font-size: 12px; white-space: nowrap; }
+.prec td { padding: 7px 8px; border-top: 1px solid var(--grid); vertical-align: middle; }
+.prec td.r { text-align: right; white-space: nowrap; }
+.prec td.bar { width: 36%; min-width: 120px; }
+.prec .rating { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 12.5px; white-space: nowrap; }
+.prec .rating svg { width: 12px; height: 12px; }
+.r-excellent { color: var(--good-text); } .r-acceptable { color: var(--warn-text); } .r-poor { color: var(--bad-text); }
+.pbar { position: relative; height: 8px; border-radius: 4px; background: var(--grid); }
+.pbar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+.pbar i { position: absolute; top: -3px; bottom: -3px; width: 1.5px; background: var(--text-2); opacity: .6; }
+.legend2 { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
 /* Row 3: trends */
 .trends { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .chart { position: relative; }
@@ -221,6 +249,7 @@ pre { background: var(--surface-2); border: 1px solid var(--border); border-radi
   .row1 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .row1 > :first-child { grid-column: 1 / -1; }
 }
+@media (max-width: 900px) { .acc { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) {
   header { padding: 10px 16px; }
   main { padding: 12px 16px 32px; }
@@ -298,6 +327,33 @@ pre { background: var(--surface-2); border: 1px solid var(--border); border-radi
         <thead><tr><th>Check</th><th style="text-align:right">Value</th><th>Limits</th><th>Within limits</th><th>Status</th></tr></thead>
         <tbody id="measBody"><tr><td colspan="5" class="empty">No pin in view</td></tr></tbody>
       </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Accuracy <span class="right" id="accTime"></span></h2>
+    <div class="acc">
+      <div>
+        <h3>Decision accuracy — labelled samples</h3>
+        <div class="hero"><span class="big num" id="accPct">—</span><span class="sub" id="accSub">evaluating…</span></div>
+        <div class="rates">
+          <div class="rateline"><div class="top"><span>Good pins passed</span><b class="num" id="accGood">—</b></div><div class="track"><span id="accGoodBar" style="width:0;background:var(--good)"></span></div></div>
+          <div class="rateline"><div class="top"><span>Bad pins caught</span><b class="num" id="accBad">—</b></div><div class="track"><span id="accBadBar" style="width:0;background:var(--good)"></span></div></div>
+        </div>
+        <div class="chips2" id="accDefects"></div>
+        <div class="wrong" id="accWrong"></div>
+        <div class="note" id="accNote"></div>
+      </div>
+      <div>
+        <h3>Measurement precision — pins lying still</h3>
+        <div class="scroll">
+          <table class="prec">
+            <thead><tr><th>Check</th><th style="text-align:right">± spread (1σ)</th><th>Share of tolerance</th><th></th><th>Rating</th></tr></thead>
+            <tbody id="precBody"><tr><td colspan="5" class="empty">Leave a pin still under the camera for a few seconds</td></tr></tbody>
+          </table>
+        </div>
+        <div class="legend2">Share of tolerance = 6σ ÷ tolerance width (3σ ÷ distance to the limit for one-sided limits). Under 10% excellent · under 30% acceptable · above 30% too noisy near the limit. Marks at 10% and 30%. Width-type values move in steps of one measuring pixel; “below resolution” means the pin's value never changed.</div>
+      </div>
     </div>
   </section>
 
@@ -547,6 +603,44 @@ function renderHealth(h) {
   } else pa.style.display = "none";
 }
 
+function renderAccuracy(a, prec) {
+  if (a) {
+    $("accPct").textContent = a.accuracy_pct == null ? "—" : a.accuracy_pct.toFixed(a.accuracy_pct === 100 ? 0 : 1) + "%";
+    $("accSub").textContent = `${a.correct} of ${a.n} samples judged correctly`;
+    $("accTime").textContent = "Evaluated " + a.time.slice(11, 16) + (a.model ? "" : " · tolerances only");
+    const g = a.good, b = a.bad;
+    $("accGood").textContent = g.n ? `${g.passed} / ${g.n} · ${g.pct}%` : "no samples";
+    $("accBad").textContent = b.n ? `${b.caught} / ${b.n} · ${b.pct}%` : "no samples";
+    const col = p => p == null ? "var(--grid)" : p >= 99.9 ? "var(--good)" : p >= 90 ? "var(--warn)" : "var(--bad)";
+    $("accGoodBar").style.width = (g.pct || 0) + "%"; $("accGoodBar").style.background = col(g.pct);
+    $("accBadBar").style.width = (b.pct || 0) + "%"; $("accBadBar").style.background = col(b.pct);
+    $("accDefects").innerHTML = Object.entries(a.defects).map(([d, v]) =>
+      `<span>${d.replace(/_/g, " ")}: caught ${v.caught}/${v.n}</span>`).join("");
+    $("accWrong").innerHTML = a.wrong.length ? "<b>Wrong:</b> " + a.wrong.map(w =>
+      `${w.file} → ${w.verdict}${w.failed.length ? " (" + w.failed.map(f => NAMES[f] || f).join(", ") + ")" : ""}`).join(" · ") : "";
+    const notes = [];
+    if (b.n < 10) notes.push(`Only ${b.n} bad sample${b.n === 1 ? "" : "s"} — save at least 10 real defective pins (several of each defect) before trusting the "caught" rate.`);
+    if (g.n < 20) notes.push(`${g.n} good samples — 20+ makes the good-pin rate more reliable.`);
+    $("accNote").style.display = notes.length ? "block" : "none";
+    $("accNote").textContent = notes.join(" ");
+  }
+  const tb = $("precBody"), rows = CFG ? CFG.checks.filter(k => prec && prec[k]) : [];
+  if (!rows.length) { tb.innerHTML = `<tr><td colspan="5" class="empty">Leave a pin still under the camera for a few seconds</td></tr>`; return; }
+  const icon = r => r === "excellent" ? SMALL.ok : r === "acceptable" ? SMALL.warn : SMALL.bad;
+  tb.innerHTML = rows.map(k => {
+    const p = prec[k], pct = p.pct_of_tol, w = pct == null ? 0 : Math.min(100, pct / 50 * 100);
+    const colr = p.rating === "excellent" ? "var(--good)" : p.rating === "acceptable" ? "var(--warn)" : "var(--bad)";
+    const below = p.sd === 0 && CFG.units[k] === "mm" && CFG.resolution_mm;
+    const spread = below ? `< ${CFG.resolution_mm.toFixed(3)} mm` : `± ${fmt(p.sd, k)}${unit(k)}`;
+    return `<tr><td>${NAMES[k] || k}</td>
+      <td class="r num" ${below ? 'title="Smaller than one measuring step — the value did not change"' : ""}>${spread}</td>
+      <td class="bar"><div class="pbar" title="0–50% scale"><span style="width:${w}%;background:${colr}"></span><i style="left:20%"></i><i style="left:60%"></i></div></td>
+      <td class="r num">${pct == null ? "—" : pct.toFixed(1) + "%"}</td>
+      <td>${below ? `<span class="rating" style="color:var(--muted)">below resolution</span>` : p.rating ? `<span class="rating r-${p.rating}">${icon(p.rating)}${p.rating}</span>` : ""}
+        <div style="color:var(--muted);font-size:11.5px">${p.pins} pin${p.pins === 1 ? "" : "s"}</div></td></tr>`;
+  }).join("");
+}
+
 /* ---------- records ---------- */
 async function loadHistory() {
   records = await getJSON("/api/history?n=200");
@@ -697,7 +791,7 @@ $("resetBtn").onclick = async () => {
 async function tick() {
   try {
     const s = await getJSON("/api/status");
-    renderHeader(s); renderLive(s); renderToday(s); renderHealth(s.health);
+    renderHeader(s); renderLive(s); renderToday(s); renderHealth(s.health); renderAccuracy(s.accuracy, s.precision);
     const key = s.today.last_id + "|" + s.today.since;
     if (key !== lastId) { lastId = key; await loadHistory(); }
     const last = records[records.length - 1];

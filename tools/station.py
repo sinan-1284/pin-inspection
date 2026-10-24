@@ -26,6 +26,7 @@ import cv2
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from check_pin import load_model  # noqa: E402
 from pin_inspection import health  # noqa: E402
+from pin_inspection.accuracy import Precision, evaluate_samples  # noqa: E402
 from pin_inspection.capture import Camera, save_frame  # noqa: E402
 from pin_inspection.config import load_config  # noqa: E402
 from pin_inspection.inspection import check  # noqa: E402
@@ -67,6 +68,10 @@ class Station:
         self.history = deque(maxlen=HISTORY)
         self._health, self._health_t = {}, 0
         self.reset_at = RESET_FILE.read_text().strip() if RESET_FILE.exists() else ""
+        self.precision = Precision()
+        self.accuracy = None
+        self._acc_dirty = threading.Event()
+        self._acc_dirty.set()  # evaluate once at start
         self._load_history()
 
     # ---- inspection records -------------------------------------------------
@@ -134,6 +139,7 @@ class Station:
                               (0, 140, 255), 2)
         if count_now:
             self.record(verdict, checks, failed, crop)
+        self.precision.feed(state, checks)
         with self.lock:
             self.frame = frame
             self.camera_jpg = jpeg(small, 70)
@@ -162,6 +168,20 @@ class Station:
                 print(self.message, flush=True)
                 time.sleep(2)
 
+    def run_accuracy(self):
+        """Re-evaluate the labelled samples whenever they or the model change."""
+        while True:
+            self._acc_dirty.wait()
+            self._acc_dirty.clear()
+            try:
+                r = evaluate_samples(DATA, self.cfg, self.model)
+                r.pop("items")
+                self.accuracy = r
+                print(f"*** accuracy {r['accuracy_pct']}% on {r['n']} samples", flush=True)
+            except Exception as e:  # never let evaluation take the station down
+                print(f"accuracy evaluation failed: {e}", flush=True)
+            time.sleep(2)
+
     # ---- buttons ------------------------------------------------------------
     def counts(self):
         good = len(list((DATA / "good").glob("*.png")))
@@ -182,6 +202,7 @@ class Station:
         path = out / time.strftime("%Y%m%d-%H%M%S.png")
         save_frame(path, frame)
         msg = f"Saved {path.relative_to(ROOT)} (live result {self.live['verdict']})"
+        self._acc_dirty.set()
         print(f"*** {msg}", flush=True)
         return msg
 
@@ -196,6 +217,7 @@ class Station:
             print("*** TRAIN\n" + self.train_output, flush=True)
             if r.returncode == 0:
                 self.model = load_model(self.cfg)
+                self._acc_dirty.set()
                 return "Model trained and loaded"
             return "Training failed — see output"
         finally:
@@ -237,6 +259,8 @@ class Station:
             "camera": {"ok": self.camera_ok, "message": self.message, "fps": round(self.fps, 2)},
             "health": self.health(),
             "busy": self.busy,
+            "accuracy": self.accuracy,
+            "precision": self.precision.summary(self.config()["limits"]),
         }
 
     def config(self):
@@ -246,8 +270,10 @@ class Station:
             limits["model_score"] = [None, round(self.model.threshold, 2)]
         units = {k: ("mm" if k in ("length", "shaft_width", "head_width", "straightness_max_dev") else
                      "°" if k == "tip_angle_deg" else "") for k in CHECKS}
-        return {"limits": limits, "units": units, "checks": CHECKS,
-                "mm_per_px": self.cfg["measure"].get("mm_per_px")}
+        mmpp = self.cfg["measure"].get("mm_per_px")
+        return {"limits": limits, "units": units, "checks": CHECKS, "mm_per_px": mmpp,
+                # smallest width step: one pixel of the upscaled measuring crop
+                "resolution_mm": round(mmpp / self.cfg["segment"]["upscale"], 4) if mmpp else None}
 
 
 def make_handler(st):
@@ -337,6 +363,7 @@ def main():
 
     st = Station(load_config())
     threading.Thread(target=st.run_camera, daemon=True).start()
+    threading.Thread(target=st.run_accuracy, daemon=True).start()
     server = ThreadingHTTPServer((args.host, args.port), make_handler(st))
     print(f"Pin station on http://{args.host}:{args.port}  (Ctrl-C to stop)", flush=True)
     try:
