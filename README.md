@@ -24,7 +24,7 @@ venv/bin/python -m pytest -q tests                     # run tests (synthetic pi
 venv/bin/python tools/station.py      # then open http://<pi-address>:8080 (e.g. http://100.89.72.30:8080)
 ```
 
-The station checks the camera continuously and records each pin **once**, when it has lain still for ~1.5 s (the view must clear before the next pin counts). The browser dashboard shows:
+The station checks the camera continuously (DDLC-themed page in `app/dashboard.html`) and records each pin **once**, when it has lain still for ~1.5 s (the view must clear before the next pin counts). The browser dashboard shows:
 
 - **Live view** — close-up of the pin with outline, axis, head and tip, plus the whole camera view (green / red box = pin, orange = rejected object)
 - **Current pin** — big PASS / FAIL / No pin / Clear view, with the failed checks
@@ -32,10 +32,10 @@ The station checks the camera continuously and records each pin **once**, when i
 - **Measurements** — each check's value against its limits
 - **Trends** — length, shaft width, bend and model score for the last 50 pins, with the tolerance band
 - **Recent inspections** — thumbnails and values, filterable to fails only
-- **Samples & training** — Save as GOOD / Save as BAD (with defect name) / Train model
+- **Samples & training** — Save as GOOD / Save as BAD (with defect name) / Train model / Reset counters / Download CSV
 - **Station health** — CPU temperature, power supply, 5 V rail, throttling, disk, uptime
 
-Records go to `inspection_log_station.csv` and thumbnails to `captures/inspections/` (both stay on the Pi). The station picks the most pin-shaped object in view (about the nominal length, thin), so paper edges, creases and shadows are ignored; anything that isn't pin-sized shows as *Clear view* and is not counted.
+Records go to `inspection_log_station.csv` and thumbnails to `captures/inspections/` (both stay on the Pi). *Reset counters* restarts the counters and charts from that moment without deleting the log. The station picks the most pin-shaped object in view (about the nominal length, thin), so paper edges, creases and shadows are ignored; anything that isn't pin-sized shows as *Clear view* and is not counted.
 
 ## PASS / FAIL
 
@@ -61,6 +61,10 @@ A pin **PASSES** only if every check holds:
 Each check prints its value and limits, the latest result card is written to `captures/last_inspection.png`, and every result is appended to `inspection_log.csv`. `tools/train.py` also prints tolerance limits suggested by the spread of the good pins. Sample images (`data/`), models and logs stay on the station and are not committed.
 
 Each run saves to `captures/<timestamp>/`: the raw `frame.png`, an `annotated.png` close-up (outline, axis, head and tip), the `aligned_mask.png` (head left), a `width_profile.png` and the full `measurements.json`.
+
+## Presentation
+
+The DDLC AI presentation is in [`docs/`](docs/) and is published with GitHub Pages.
 
 ## Measurements
 
@@ -149,13 +153,15 @@ pin-inspection/
 │   ├── tracker.py       # One inspection per pin from the frame stream
 │   └── health.py        # Pi health readings (Discord / MQTT alerts planned)
 ├── app/
-│   └── dashboard.html   # Browser dashboard served by tools/station.py
+│   ├── dashboard.html   # Browser dashboard served by tools/station.py
+│   └── ddlc-logo.svg
 ├── tools/
 │   ├── station.py       # Live station + dashboard server
 │   ├── measure.py       # Measure the pin under the camera / in an image
 │   ├── check_pin.py     # PASS / FAIL, save samples
 │   ├── train.py         # Train the good-pin model from data/good
 │   └── evaluate.py      # Confusion matrix over data/good + data/bad
+├── docs/                # DDLC AI presentation (GitHub Pages)
 └── tests/               # Unit tests + sample images
 ```
 

@@ -102,10 +102,12 @@ Improvements over the reference:
 
 Browser UI in the style of [`AI-DDLC/generic`](https://github.com/AI-DDLC/generic) (FastAPI + DDLC theme):
 
-- [ ] Live video with PASS/FAIL overlay
-- [ ] Train mode (password-protected): capture good pins and retrain from the browser
-- [ ] Results view: pass/fail counters, recent fails with images, CSV export
+- [x] Live view with PASS/FAIL card
+- [ ] Train mode (password-protected): capture good pins and retrain from the browser — works, but no password yet
+- [x] Results view: pass/fail counters, recent fails with images, CSV export
 - [ ] Settings: camera selection, exposure, sensitivity (`threshold_multiplier`)
+
+**Progress (2026-10-24):** running on the real station. `tools/station.py` serves the DDLC-themed dashboard (`app/dashboard.html`): live close-up + camera view, PASS / FAIL, counters and pass rate, measurement gauges against limits, trend charts (length, shaft, bend, model score), recent inspections with thumbnails, save / train / reset buttons, CSV download and Pi health. `pin_inspection/tracker.py` records each pin once after it settles (~1.5 s) and ignores non-pin objects; segmentation now picks the most pin-shaped blob so paper edges no longer hide the pin.
 
 ## Milestone 6 — Hardening
 

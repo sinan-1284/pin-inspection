@@ -6,7 +6,8 @@
 Each pin is inspected continuously and recorded once, when it has settled
 under the camera. The dashboard (app/dashboard.html) shows the live verdict,
 today's counts, measurement trends, recent inspections and Pi health, and
-has buttons to save the current frame as a good / bad sample and to retrain.
+has buttons to save the current frame as a good / bad sample, retrain, reset
+the counters and download the CSV log.
 """
 import argparse
 import csv
@@ -37,6 +38,8 @@ DATA = ROOT / "data"
 PAGE = ROOT / "app" / "dashboard.html"
 LOG = ROOT / "inspection_log_station.csv"
 THUMBS = ROOT / "captures" / "inspections"
+RESET_FILE = ROOT / "captures" / "counters_reset.txt"
+LOGO = ROOT / "app" / "ddlc-logo.svg"
 CHECKS = ["length", "shaft_width", "head_width", "straightness_max_dev", "head_symmetry",
           "head_shaft_ratio", "tip_angle_deg", "model_score"]
 HISTORY = 500
@@ -63,6 +66,7 @@ class Station:
         self.busy = False
         self.history = deque(maxlen=HISTORY)
         self._health, self._health_t = {}, 0
+        self.reset_at = RESET_FILE.read_text().strip() if RESET_FILE.exists() else ""
         self._load_history()
 
     # ---- inspection records -------------------------------------------------
@@ -197,6 +201,18 @@ class Station:
         finally:
             self.busy = False
 
+    def reset(self):
+        """Restart counters and charts from now; the CSV log keeps everything."""
+        self.reset_at = time.strftime("%Y-%m-%d %H:%M:%S")
+        RESET_FILE.parent.mkdir(parents=True, exist_ok=True)
+        RESET_FILE.write_text(self.reset_at)
+        print(f"*** counters reset at {self.reset_at}", flush=True)
+        return f"Counters reset at {self.reset_at[11:]}"
+
+    def since(self):
+        """Counters cover today, or from the last reset if that was later."""
+        return max(time.strftime("%Y-%m-%d 00:00:00"), self.reset_at)
+
     # ---- API payloads -------------------------------------------------------
     def health(self):
         if time.time() - self._health_t > 5:
@@ -205,16 +221,17 @@ class Station:
 
     def status(self):
         good, bad = self.counts()
-        today = time.strftime("%Y-%m-%d")
+        since = self.since()
         with self.lock:
             live = dict(self.live)
-            hist = [r for r in self.history if r["time"].startswith(today)]
+            hist = [r for r in self.history if r["time"] >= since]
         m = self.model
         return {
             "live": live,
             "today": {"inspected": len(hist), "pass": sum(r["verdict"] == "PASS" for r in hist),
                       "fail": sum(r["verdict"] == "FAIL" for r in hist),
-                      "last_id": self.history[-1]["id"] if self.history else 0},
+                      "last_id": self.history[-1]["id"] if self.history else 0,
+                      "since": since, "reset": since == self.reset_at},
             "samples": {"good": good, "bad": bad},
             "model": {"n_train": m.n_train, "threshold": round(m.threshold, 2)} if m else None,
             "camera": {"ok": self.camera_ok, "message": self.message, "fps": round(self.fps, 2)},
@@ -256,6 +273,19 @@ def make_handler(st):
             path = u.path
             if path == "/":
                 self.send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
+            elif path == "/logo.svg":
+                self.send(200, LOGO.read_bytes(), "image/svg+xml")
+            elif path == "/api/log.csv":
+                body = LOG.read_bytes() if LOG.exists() else b""
+                try:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/csv")
+                    self.send_header("Content-Disposition",
+                                     f'attachment; filename="pin_inspections_{time.strftime("%Y%m%d-%H%M")}.csv"')
+                    self.end_headers()
+                    self.wfile.write(body)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
             elif path in ("/live.jpg", "/camera.jpg"):
                 with st.lock:
                     img = st.live_jpg if path == "/live.jpg" else st.camera_jpg
@@ -273,8 +303,9 @@ def make_handler(st):
                 self.json(st.config())
             elif path == "/api/history":
                 n = int(parse_qs(u.query).get("n", ["100"])[0])
+                since = st.since()
                 with st.lock:
-                    self.json(list(st.history)[-n:])
+                    self.json([r for r in st.history if r["time"] >= since][-n:])
             else:
                 self.send(404, b"not found", "text/plain")
 
@@ -287,6 +318,8 @@ def make_handler(st):
                         any(not p.replace("_", "").replace("-", "").isalnum() for p in parts):
                     return self.json({"message": f"Bad label {label!r}"})
                 self.json({"message": st.save(label)})
+            elif u.path == "/api/reset":
+                self.json({"message": st.reset()})
             elif u.path == "/api/train":
                 msg = st.train()
                 self.json({"message": msg, "train_output": st.train_output})

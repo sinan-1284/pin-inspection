@@ -7,38 +7,41 @@
 <style>
 :root {
   color-scheme: light;
-  --bg: #f3f3f1;
-  --surface: #fcfcfb;
-  --surface-2: #f6f6f4;
-  --border: #e2e1dc;
-  --grid: #ecebe7;
-  --text: #0b0b0b;
-  --text-2: #52514e;
-  --muted: #7a7974;
+  --brand: #008100;
+  --brand-dark: #002D07;
+  --bg: #F4F7F3;
+  --surface: #FFFFFF;
+  --surface-2: #F7FAF6;
+  --border: #D5E3D3;
+  --grid: #E6EEE5;
+  --text: #10241A;
+  --text-2: #42554A;
+  --muted: #66786D;
   --series: #2a78d6;
   --band: rgba(42, 120, 214, 0.10);
-  --good: #0ca30c;
+  --good: #008100;
   --good-text: #006300;
-  --good-bg: #e3f5e3;
-  --bad: #d03b3b;
-  --bad-text: #b02a2a;
-  --bad-bg: #fbe6e6;
+  --good-bg: #E7F3E6;
+  --bad: #C2410C;
+  --bad-text: #A8380A;
+  --bad-bg: #FBEAE2;
   --warn: #fab219;
   --warn-text: #8a5a00;
   --warn-bg: #fdf1d6;
-  --idle-bg: #ecebe7;
-  --btn: #1f1f1e;
+  --idle-bg: #EDF2EC;
+  --btn: #002D07;
   --btn-text: #ffffff;
   --shadow: 0 1px 2px rgba(0,0,0,.04), 0 1px 1px rgba(0,0,0,.03);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
+    --brand: #2fae2f; --brand-dark: #0b3d12;
     --bg: #111110; --surface: #1a1a19; --surface-2: #20201e; --border: #2e2e2b; --grid: #262624;
     --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e87;
     --series: #3987e5; --band: rgba(57, 135, 229, 0.16);
-    --good: #0ca30c; --good-text: #4fcf4f; --good-bg: #142a14;
-    --bad: #d03b3b; --bad-text: #ef7a7a; --bad-bg: #331818;
+    --good: #19a319; --good-text: #4fcf4f; --good-bg: #142a14;
+    --bad: #e0622e; --bad-text: #f08a5d; --bad-bg: #36200f;
     --warn: #fab219; --warn-text: #fac65a; --warn-bg: #33290f;
     --idle-bg: #262624; --btn: #f0efec; --btn-text: #111110;
     --shadow: none;
@@ -46,11 +49,12 @@
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
+  --brand: #2fae2f; --brand-dark: #0b3d12;
   --bg: #111110; --surface: #1a1a19; --surface-2: #20201e; --border: #2e2e2b; --grid: #262624;
   --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e87;
   --series: #3987e5; --band: rgba(57, 135, 229, 0.16);
-  --good: #0ca30c; --good-text: #4fcf4f; --good-bg: #142a14;
-  --bad: #d03b3b; --bad-text: #ef7a7a; --bad-bg: #331818;
+  --good: #19a319; --good-text: #4fcf4f; --good-bg: #142a14;
+  --bad: #e0622e; --bad-text: #f08a5d; --bad-bg: #36200f;
   --warn: #fab219; --warn-text: #fac65a; --warn-bg: #33290f;
   --idle-bg: #262624; --btn: #f0efec; --btn-text: #111110;
   --shadow: none;
@@ -64,9 +68,11 @@ body {
 .num { font-variant-numeric: tabular-nums; }
 header {
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-  padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 5;
+  padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--border);
+  border-top: 5px solid var(--brand); position: sticky; top: 0; z-index: 5;
 }
+header .logo { height: 30px; width: auto; display: block; }
+header .brand { display: flex; align-items: center; gap: 14px; }
 header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
 header .sub { color: var(--muted); font-size: 13px; }
 .chips { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; align-items: center; }
@@ -183,9 +189,10 @@ main { padding: 16px 20px 40px; max-width: 1500px; margin: 0 auto; display: grid
   cursor: pointer; display: inline-flex; align-items: center; gap: 8px; color: #fff;
 }
 .btn:disabled { opacity: .5; cursor: default; }
-.btn.good { background: #0b8a0b; }
-.btn.bad { background: #c23434; }
+.btn.good { background: var(--brand); }
+.btn.bad { background: #C2410C; }
 .btn.train { background: var(--btn); color: var(--btn-text); }
+.btn.quiet { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); font-weight: 550; text-decoration: none; }
 .actions input {
   font: inherit; padding: 9px 10px; border-radius: 7px; border: 1px solid var(--border);
   background: var(--surface-2); color: var(--text); width: 140px;
@@ -231,9 +238,12 @@ pre { background: var(--surface-2); border: 1px solid var(--border); border-radi
 </head>
 <body>
 <header>
-  <div>
-    <h1>Pin Inspection</h1>
-    <div class="sub">Flat-head paper pins · PASS / FAIL station</div>
+  <div class="brand">
+    <img class="logo" src="/logo.svg" alt="DDLC">
+    <div>
+      <h1>Pin Inspection</h1>
+      <div class="sub">Flat-head paper pins · PASS / FAIL station</div>
+    </div>
   </div>
   <div class="chips">
     <span class="chip"><span class="dot" id="camDot"></span><span id="camText">Camera</span></span>
@@ -270,7 +280,7 @@ pre { background: var(--surface-2); border: 1px solid var(--border); border-radi
     </div>
 
     <div class="card">
-      <h2>Today</h2>
+      <h2 id="todayTitle">Today</h2>
       <div class="tiles">
         <div class="tile"><div class="label">Inspected</div><div class="value num" id="tInspected">0</div><div class="hint">pins recorded</div></div>
         <div class="tile"><div class="label">Pass rate</div><div class="value num" id="tRate">—</div><div class="hint" id="tRateHint">&nbsp;</div></div>
@@ -326,6 +336,10 @@ pre { background: var(--surface-2); border: 1px solid var(--border); border-radi
         <input id="defect" value="bent" aria-label="Defect name" placeholder="defect name">
         <button class="btn bad" id="saveBad" type="button">✕ Save as BAD</button>
         <button class="btn train" id="trainBtn" type="button">Train model</button>
+      </div>
+      <div class="actions" style="margin-top:8px">
+        <button class="btn quiet" id="resetBtn" type="button">Reset counters</button>
+        <a class="btn quiet" href="/api/log.csv" download>Download CSV</a>
       </div>
       <div class="msg" id="msg"></div>
       <div class="samples" id="samples"></div>
@@ -479,6 +493,7 @@ function gauge(td, k, val, ok) {
 
 function renderToday(s) {
   const t = s.today;
+  $("todayTitle").textContent = t.reset ? "Since reset " + t.since.slice(11, 16) : "Today";
   $("tInspected").textContent = t.inspected;
   $("tPass").textContent = t.pass; $("tFail").textContent = t.fail;
   const rate = t.inspected ? (100 * t.pass / t.inspected) : null;
@@ -673,13 +688,18 @@ $("saveBad").onclick = () => {
   post("/api/save?label=bad/" + encodeURIComponent(d));
 };
 $("trainBtn").onclick = () => post("/api/train");
+$("resetBtn").onclick = async () => {
+  if (!confirm("Reset the counters and charts? The CSV log keeps every inspection.")) return;
+  await post("/api/reset"); lastId = -1;
+};
 
 /* ---------- loop ---------- */
 async function tick() {
   try {
     const s = await getJSON("/api/status");
     renderHeader(s); renderLive(s); renderToday(s); renderHealth(s.health);
-    if (s.today.last_id !== lastId) { lastId = s.today.last_id; await loadHistory(); }
+    const key = s.today.last_id + "|" + s.today.since;
+    if (key !== lastId) { lastId = key; await loadHistory(); }
     const last = records[records.length - 1];
     $("lastRec").textContent = last ? `#${last.id} ${last.verdict} at ${last.time.slice(11)}` : "—";
   } catch (e) {
