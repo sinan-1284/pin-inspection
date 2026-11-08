@@ -2,6 +2,10 @@
 
     venv/bin/python tools/station.py            # then open http://<pi>:8080
     venv/bin/python tools/station.py --port 9000
+    venv/bin/python tools/station.py --public-port 8090   # + password-protected port on localhost
+
+The public port is what the tunnel to socket.ddlc.ai publishes as
+https://pin.ddlc.ai. It asks for STATION_USER / STATION_PASSWORD from .env.
 
 Each pin is inspected continuously and recorded once, when it has settled
 under the camera. The dashboard (app/dashboard.html) shows the live verdict,
@@ -10,7 +14,10 @@ has buttons to save the current frame as a good / bad sample, retrain, reset
 the counters and download the CSV log.
 """
 import argparse
+import base64
 import csv
+import hmac
+import os
 import json
 import subprocess
 import sys
@@ -276,10 +283,33 @@ class Station:
                 "resolution_mm": round(mmpp / self.cfg["segment"]["upscale"], 4) if mmpp else None}
 
 
-def make_handler(st):
+def load_env(path=ROOT / ".env"):
+    if path.exists():
+        for line in path.read_text().splitlines():
+            key, sep, value = line.partition("=")
+            if sep and not key.strip().startswith("#"):
+                os.environ.setdefault(key.strip(), value.strip().strip('"'))
+
+
+def make_handler(st, login=None):
+    """login = "user:password" makes every request ask for it (HTTP Basic auth)."""
+    expected = "Basic " + base64.b64encode(login.encode()).decode() if login else None
+
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *a):
             pass
+
+        def authorised(self):
+            if expected is None or hmac.compare_digest(self.headers.get("Authorization", ""), expected):
+                return True
+            try:
+                self.send_response(401)
+                self.send_header("WWW-Authenticate", 'Basic realm="DDLC pin inspection", charset="UTF-8"')
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return False
 
         def send(self, code, body, ctype):
             try:
@@ -295,6 +325,8 @@ def make_handler(st):
             self.send(200, json.dumps(obj).encode(), "application/json")
 
         def do_GET(self):
+            if not self.authorised():
+                return
             u = urlparse(self.path)
             path = u.path
             if path == "/":
@@ -336,6 +368,8 @@ def make_handler(st):
                 self.send(404, b"not found", "text/plain")
 
         def do_POST(self):
+            if not self.authorised():
+                return
             u = urlparse(self.path)
             if u.path == "/api/save":
                 label = parse_qs(u.query).get("label", ["good"])[0].strip("/")
@@ -359,12 +393,22 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--host", default="0.0.0.0")
     ap.add_argument("--port", type=int, default=8080)
+    ap.add_argument("--public-port", type=int, help="also serve on 127.0.0.1:PORT behind a password (for the tunnel)")
     args = ap.parse_args()
+    load_env()
 
     st = Station(load_config())
     threading.Thread(target=st.run_camera, daemon=True).start()
     threading.Thread(target=st.run_accuracy, daemon=True).start()
     server = ThreadingHTTPServer((args.host, args.port), make_handler(st))
+    if args.public_port:
+        password = os.environ.get("STATION_PASSWORD")
+        if not password:
+            sys.exit("--public-port needs STATION_PASSWORD in .env")
+        login = f'{os.environ.get("STATION_USER", "ddlc")}:{password}'
+        public = ThreadingHTTPServer(("127.0.0.1", args.public_port), make_handler(st, login))
+        threading.Thread(target=public.serve_forever, daemon=True).start()
+        print(f"Password-protected copy on http://127.0.0.1:{args.public_port}", flush=True)
     print(f"Pin station on http://{args.host}:{args.port}  (Ctrl-C to stop)", flush=True)
     try:
         server.serve_forever()

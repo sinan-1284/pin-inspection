@@ -1,0 +1,16 @@
+# systemd --user unit (Pi):  cp deploy/pin-station.service ~/.config/systemd/user/
+#                            systemctl --user enable --now pin-station
+# Dashboard on :8080 (LAN / Tailscale) and a password-protected copy on
+# 127.0.0.1:8090 that pin-tunnel.service carries to socket.ddlc.ai.
+[Unit]
+Description=Pin inspection station (camera + dashboard)
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/pin-inspection
+ExecStart=%h/pin-inspection/venv/bin/python -u tools/station.py --public-port 8090
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

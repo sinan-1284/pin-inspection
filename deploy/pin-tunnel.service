@@ -1,0 +1,17 @@
+# systemd --user unit (Pi):  cp deploy/pin-tunnel.service ~/.config/systemd/user/
+#                            systemctl --user enable --now pin-tunnel
+# Forwards socket.ddlc.ai:127.0.0.1:8090 to this Pi's 127.0.0.1:8090 over SSH
+# ("socket" host in ~/.ssh/config, key ~/.ssh/socket_ddlc). Reconnects forever.
+[Unit]
+Description=SSH tunnel: pin station -> socket.ddlc.ai
+After=network-online.target pin-station.service
+
+[Service]
+ExecStart=/usr/bin/ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes \
+    -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
+    -R 127.0.0.1:8090:127.0.0.1:8090 socket
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
