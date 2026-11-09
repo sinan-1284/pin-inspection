@@ -183,11 +183,11 @@
   </div>
   <div class="flow">
     <div class="step"><span class="num">01 · See</span><h3>Camera</h3><p>A webcam above the line captures each pin.</p></div>
-    <div class="step"><span class="num">02 · Measure</span><h3>Shape</h3><p>Length, head, shaft, straightness and tip, in millimetres.</p></div>
+    <div class="step"><span class="num">02 · Measure</span><h3>Shape</h3><p>Length, head, shaft, straightness and tip, to ±0.04&nbsp;mm.</p></div>
     <div class="step"><span class="num">03 · Compare</span><h3>Good pins</h3><p>Learned from just 10–20 good pins.</p></div>
     <div class="step end"><span class="num" style="color:#7BCB7B">04 · Decide</span><h3>Verdict</h3><p><span class="pill pass">PASS</span> or <span class="pill fail">FAIL</span>, with the reason.</p></div>
   </div>
-  <p class="lead">Runs on a <b>Raspberry Pi 5</b> and a standard USB webcam.</p>
+  <p class="lead">Runs on a <b>Raspberry Pi 5</b> and a standard USB webcam, calibrated with a 22&nbsp;mm reference pin.</p>
   <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
 </section>
 
@@ -204,6 +204,8 @@
       <li>Counters, pass rate and recent fails with images</li>
       <li>One-click training from good pins</li>
       <li>Every pin logged and exportable</li>
+      <li>Secure online access at <b>pin.ddlc.ai</b> with a password login</li>
+      <li>Starts by itself after a power cut</li>
     </ul>
   </div>
   <div class="footer"><img src="ddlc-logo-green.svg" alt="DDLC AI"><span class="pg"></span></div>
@@ -278,8 +280,8 @@
         </div>
         <div class="mtile">
           <span class="name">Pin</span><span class="badge soon">Joining next</span>
-          <div class="kv"><span>Camera</span><span>—</span></div>
-          <div class="kv"><span>Pass rate</span><span>—</span></div>
+          <div class="kv"><span>Camera</span><span>Live</span></div>
+          <div class="kv"><span>Online</span><span>pin.ddlc.ai</span></div>
           <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none"><line x1="0" y1="20" x2="200" y2="20" stroke="#4A5E4E" stroke-width="3" stroke-dasharray="8 8"/></svg>
         </div>
       </div>
