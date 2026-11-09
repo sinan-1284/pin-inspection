@@ -5,7 +5,8 @@
     venv/bin/python tools/station.py --public-port 8090   # + password-protected port on localhost
 
 The public port is what the tunnel to socket.ddlc.ai publishes as
-https://pin.ddlc.ai. It asks for STATION_USER / STATION_PASSWORD from .env.
+https://pin.ddlc.ai. It shows a login page that asks for STATION_PASSWORD
+from .env; changing the password signs everyone out.
 
 Each pin is inspected continuously and recorded once, when it has settled
 under the camera. The dashboard (app/dashboard.html) shows the live verdict,
@@ -14,8 +15,8 @@ has buttons to save the current frame as a good / bad sample, retrain, reset
 the counters and download the CSV log.
 """
 import argparse
-import base64
 import csv
+import html
 import hmac
 import os
 import json
@@ -24,6 +25,7 @@ import sys
 import threading
 import time
 from collections import deque
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -48,6 +50,8 @@ LOG = ROOT / "inspection_log_station.csv"
 THUMBS = ROOT / "captures" / "inspections"
 RESET_FILE = ROOT / "captures" / "counters_reset.txt"
 LOGO = ROOT / "app" / "ddlc-logo.svg"
+LOGIN_PAGE = ROOT / "app" / "login.html"
+COOKIE = "pin_session"
 CHECKS = ["length", "shaft_width", "head_width", "straightness_max_dev", "head_symmetry",
           "head_shaft_ratio", "tip_angle_deg", "model_score"]
 HISTORY = 500
@@ -291,25 +295,54 @@ def load_env(path=ROOT / ".env"):
                 os.environ.setdefault(key.strip(), value.strip().strip('"'))
 
 
-def make_handler(st, login=None):
-    """login = "user:password" makes every request ask for it (HTTP Basic auth)."""
-    expected = "Basic " + base64.b64encode(login.encode()).decode() if login else None
+def make_handler(st, password=None):
+    """password: every request needs the session cookie that the /login page sets."""
+    # the cookie is derived from the password, so changing it signs everyone out
+    token = hmac.new(password.encode(), b"pin-station-session", "sha256").hexdigest() if password else None
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *a):
             pass
 
         def authorised(self):
-            if expected is None or hmac.compare_digest(self.headers.get("Authorization", ""), expected):
+            if token is None:
                 return True
+            c = SimpleCookie(self.headers.get("Cookie", "")).get(COOKIE)
+            if c and hmac.compare_digest(c.value, token):
+                return True
+            if self.command == "GET" and urlparse(self.path).path == "/":
+                self.redirect("/login")
+            else:
+                self.send(401, b"login required", "text/plain")
+            return False
+
+        def redirect(self, location, cookie=None):
             try:
-                self.send_response(401)
-                self.send_header("WWW-Authenticate", 'Basic realm="DDLC pin inspection", charset="UTF-8"')
+                self.send_response(303)
+                self.send_header("Location", location)
+                if cookie:
+                    self.send_header("Set-Cookie", cookie)
                 self.send_header("Content-Length", "0")
                 self.end_headers()
             except (BrokenPipeError, ConnectionResetError):
                 pass
-            return False
+
+        def login_page(self, error=""):
+            nxt = parse_qs(urlparse(self.path).query).get("next", ["/"])[0]
+            body = LOGIN_PAGE.read_text().replace("{{next}}", html.escape(nxt)).replace(
+                "{{error}}", f'<p class="error">{html.escape(error)}</p>' if error else "")
+            self.send(200, body.encode(), "text/html; charset=utf-8")
+
+        def login(self):
+            n = int(self.headers.get("Content-Length") or 0)
+            form = parse_qs(self.rfile.read(min(n, 4096)).decode(errors="replace"))
+            if not hmac.compare_digest(form.get("password", [""])[0].encode(), password.encode()):
+                time.sleep(1)  # slow down guessing
+                return self.login_page("Wrong password")
+            nxt = form.get("next", ["/"])[0]
+            if not nxt.startswith("/") or nxt.startswith("//"):
+                nxt = "/"
+            self.redirect(nxt, f"{COOKIE}={token}; Max-Age=2592000; Path=/; HttpOnly; Secure; SameSite=Lax")
 
         def send(self, code, body, ctype):
             try:
@@ -325,10 +358,14 @@ def make_handler(st, login=None):
             self.send(200, json.dumps(obj).encode(), "application/json")
 
         def do_GET(self):
-            if not self.authorised():
-                return
             u = urlparse(self.path)
             path = u.path
+            if token and path == "/login":
+                return self.login_page()
+            if token and path == "/logout":
+                return self.redirect("/login", f"{COOKIE}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax")
+            if path != "/logo.svg" and not self.authorised():
+                return
             if path == "/":
                 self.send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
             elif path == "/logo.svg":
@@ -368,9 +405,11 @@ def make_handler(st, login=None):
                 self.send(404, b"not found", "text/plain")
 
         def do_POST(self):
+            u = urlparse(self.path)
+            if token and u.path == "/login":
+                return self.login()
             if not self.authorised():
                 return
-            u = urlparse(self.path)
             if u.path == "/api/save":
                 label = parse_qs(u.query).get("label", ["good"])[0].strip("/")
                 parts = label.split("/")
@@ -405,8 +444,7 @@ def main():
         password = os.environ.get("STATION_PASSWORD")
         if not password:
             sys.exit("--public-port needs STATION_PASSWORD in .env")
-        login = f'{os.environ.get("STATION_USER", "ddlc")}:{password}'
-        public = ThreadingHTTPServer(("127.0.0.1", args.public_port), make_handler(st, login))
+        public = ThreadingHTTPServer(("127.0.0.1", args.public_port), make_handler(st, password))
         threading.Thread(target=public.serve_forever, daemon=True).start()
         print(f"Password-protected copy on http://127.0.0.1:{args.public_port}", flush=True)
     print(f"Pin station on http://{args.host}:{args.port}  (Ctrl-C to stop)", flush=True)

@@ -43,10 +43,10 @@ Records go to `inspection_log_station.csv` and thumbnails to `captures/inspectio
 ```
 browser ──https──▶ pin.ddlc.ai ══ Cloudflare Tunnel "pin-inspection" ══▶ socket.ddlc.ai :8090
                                                                            ║ SSH reverse tunnel (from the Pi)
-                                                     Pi  station.py 127.0.0.1:8090 (login required)
+                                                     Pi  station.py 127.0.0.1:8090 (login page)
 ```
 
-The public site asks for `STATION_USER` / `STATION_PASSWORD` from `.env` on the Pi (git-ignored; see `.env.example`); `:8080` on the LAN / Tailscale has no login. Both ends run as systemd user services and come back by themselves after a reboot:
+The public site opens on a login page (`app/login.html`) that asks only for `STATION_PASSWORD` from `.env` on the Pi (git-ignored; see `.env.example`). A correct password sets a 30-day cookie; `/logout` signs out, and changing the password signs everyone out. `:8080` on the LAN / Tailscale has no login. Both ends run as systemd user services and come back by themselves after a reboot:
 
 - **Pi** (`loginctl enable-linger` once): `cp deploy/pin-station.service deploy/pin-tunnel.service ~/.config/systemd/user/ && systemctl --user enable --now pin-station pin-tunnel`. The tunnel uses the `socket` host in `~/.ssh/config` (key `~/.ssh/socket_ddlc`, added to `sinan@socket.ddlc.ai`).
 - **Server**: `bash deploy/setup-server.sh` as `sinan` creates the Cloudflare tunnel, the `pin.ddlc.ai` DNS record and the `pin-tunnel` user service. `health.ddlc.ai` runs on its own tunnel and is not touched.

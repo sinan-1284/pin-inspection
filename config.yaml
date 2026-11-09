@@ -23,7 +23,7 @@ segment:
   min_area_px: 100         # smallest blob (full-res pixels) treated as a pin
 
 measure:
-  mm_per_px: 0.1554       # 22 mm reference pin = 141.56 px vertically (2026-10-21); recalibrate if the camera moves
+  mm_per_px: 0.1519       # 22 mm reference pin = 144.8 px horizontally, 20-frame mean (2026-11-08, white paper on the black plate); recalibrate if the camera moves
   head_width_factor: 1.15  # head = end region wider than this x shaft width
   tip_width_factor: 0.85   # tip = end region narrower than this x shaft width
 
@@ -39,7 +39,7 @@ inspect:
     straightness_max_dev: [null, 0.25] # bent shaft
     head_symmetry: [0.45, null]        # off-centre / lopsided head (loose: head edge is faint when front-lit)
     head_shaft_ratio: [1.1, null]      # missing or flattened-out head
-    tip_angle_deg: [null, 75]          # blunt / broken tip
+    tip_angle_deg: [null, 120]         # broken / flat tip (~150-180 deg); the tip is only 2-4 px wide, so a good tip reads 60-100 deg
 
 model:
   path: models/model.json
